@@ -1,0 +1,27 @@
+{
+  "name": "nestore-js-mongodb",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha ./tests/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deltatre-webplu/nestore-js-mongodb.git"
+  },
+  "author": "Deltatre WebPlu",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/deltatre-webplu/nestore-js-mongodb/issues"
+  },
+  "homepage": "https://github.com/deltatre-webplu/nestore-js-mongodb#readme",
+  "dependencies": {
+    "debug": "^2.2.0",
+    "mongodb": "^2.2.11"
+  },
+  "devDependencies":{
+    "chai": "^3.4.1",
+    "mocha": "^2.3.3"
+  }
+}
