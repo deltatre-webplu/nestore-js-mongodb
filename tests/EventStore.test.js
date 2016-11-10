@@ -103,35 +103,65 @@ describe("EventStore", function() {
 			assert.isNotNull(eventStore._db);
 		});
 
-		it("should be possible to get a bucket instance", function() {
-			let bucket = eventStore.bucket(SAMPLE_BUCKETNAME);
+		describe("Giving a bucket", function(){
+			let bucket;
 
-			assert.isNotNull(bucket);
-			assert.equal(bucket._bucketName, SAMPLE_BUCKETNAME);
-			assert.equal(bucket._eventStore, eventStore);
-		});
-
-		it("should be possible to read commits", function() {
-			let bucket = eventStore.bucket(SAMPLE_BUCKETNAME);
-
-			let stream = bucket.getCommits({});
-			let docs = [];
-			return new Promise((resolve) => {
-				stream.on("data", (doc) => {
-					docs.push(doc);
-				});
-				stream.on("end", () => {
-					resolve();
-				});
-			})
-			.then(() => {
-				assert.equal(docs.length, 3);
-				assert.deepEqual(docs[0], SAMPLE_EVENT1);
-				assert.deepEqual(docs[1], SAMPLE_EVENT2);
-				assert.deepEqual(docs[2], SAMPLE_EVENT3);
+			beforeEach(function() {
+				bucket = eventStore.bucket(SAMPLE_BUCKETNAME);
 			});
 
-		});
+			it("should be possible to get a bucket instance", function() {
+				assert.isNotNull(bucket);
+				assert.equal(bucket._bucketName, SAMPLE_BUCKETNAME);
+				assert.equal(bucket._eventStore, eventStore);
+			});
 
+			it("should be possible to read commits as stream", function() {
+				let stream = bucket.getCommitsStream({});
+				let docs = [];
+				return new Promise((resolve) => {
+					stream
+					.on("data", (doc) => {
+						docs.push(doc);
+					})
+					.on("end", () => {
+						resolve();
+					});
+				})
+				.then(() => {
+					assert.equal(docs.length, 3);
+					assert.deepEqual(docs[0], SAMPLE_EVENT1);
+					assert.deepEqual(docs[1], SAMPLE_EVENT2);
+					assert.deepEqual(docs[2], SAMPLE_EVENT3);
+				});
+
+			});
+
+			it("should be possible to read commits as array", function() {
+				return bucket.getCommitsArray({})
+				.then((docs) => {
+					assert.equal(docs.length, 3);
+					assert.deepEqual(docs[0], SAMPLE_EVENT1);
+					assert.deepEqual(docs[1], SAMPLE_EVENT2);
+					assert.deepEqual(docs[2], SAMPLE_EVENT3);
+				});
+			});
+
+			it("should be possible to read commits filtering by bucket revision", function() {
+				return bucket.getCommitsArray({fromBucketRevision: 2, toBucketRevision: 2})
+				.then((docs) => {
+					assert.equal(docs.length, 1);
+					assert.deepEqual(docs[0], SAMPLE_EVENT2);
+				});
+			});
+
+			it("should be possible to read commits filtering by stream id", function() {
+				return bucket.getCommitsArray({streamId: helpers.toUuid("30000003-3003-3003-3003-300000000003") })
+				.then((docs) => {
+					assert.equal(docs.length, 1);
+					assert.deepEqual(docs[0], SAMPLE_EVENT3);
+				});
+			});
+		});
 	});
 });

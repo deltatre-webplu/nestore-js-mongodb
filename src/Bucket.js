@@ -11,11 +11,33 @@ class Bucket {
 		this._collection =  this._eventStore._db.collection(collectionName);
 	}
 
-	getCommits(filters){
-		return this._collection
-		.find({})
-		.sort({ _id : 1 })
+	getCommitsStream(filters){
+		return this._getCommits(filters)
 		.stream();
+	}
+
+	getCommitsArray(filters){
+		return this._getCommits(filters)
+		.toArray();
+	}
+
+	_getCommits(filters){
+		filters = filters || {};
+
+		let mongoFilters = {};
+		if (filters.streamId)
+			mongoFilters.StreamId = filters.streamId;
+		if (filters.fromBucketRevision || filters.toBucketRevision) {
+			mongoFilters._id = {};
+			if (filters.fromBucketRevision)
+				mongoFilters._id["$gte"] = filters.fromBucketRevision;
+			if (filters.toBucketRevision)
+				mongoFilters._id["$lte"] = filters.toBucketRevision;
+		}
+
+		return this._collection
+		.find(mongoFilters)
+		.sort({ _id : 1 });
 	}
 }
 
