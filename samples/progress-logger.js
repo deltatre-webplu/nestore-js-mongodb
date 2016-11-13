@@ -10,10 +10,12 @@ class ProgressLogger{
 
 		this._value = 0;
 		this._logInterval = options.logInterval || 5000; // milliseconds
-		this._lastWrite = Date.now();
 		this._startTime = Date.now();
+		this._lastWrite = this._startTime;
+		this._lastValue = 0;
 
-		this._logger(`${this._label} started at ${new Date()}`);
+		let nowAsString = (new Date()).toISOString();
+		this._logger(`${this._label} started at ${nowAsString}`);
 	}
 
 	increment(incValue){
@@ -22,26 +24,34 @@ class ProgressLogger{
 		this._value += incValue;
 		let current = Date.now();
 		let elapsed = current - this._lastWrite;
+		elapsed = elapsed || 1;
 
-		let percentage = this._count
-			? this._value	* 100 / this._count
-			: null;
+		if (elapsed >= this._logInterval || this._value == this._count){
 
-		if (elapsed > this._logInterval || percentage == 100){
-			this._lastWrite = current;
+			let percentage = this._count
+				? this._value	* 100 / this._count
+				: null;
+			let rateAtSeconds = (this._value - this._lastValue) / (elapsed / 1000);
 
 			if (this._count){
-				this._logger(`${this._label} ... ${percentage.toFixed(2)}% (${this._value} of ${this._count})`);
+				this._logger(`${this._label} ... ${percentage.toFixed(2)}% (${this._value} of ${this._count}, ${rateAtSeconds.toFixed(1)}/sec)`);
 			}
 			else {
-				this._logger(`${this._label} ... ${this._value}`);
+				this._logger(`${this._label} ... ${this._value} (${rateAtSeconds.toFixed(1)}/sec)`);
 			}
+
+			this._lastWrite = current;
+			this._lastValue = this._value;
 		}
 	}
 
 	end(){
-		let elapsed = (Date.now() - this._startTime) / 1000;
-		this._logger(`${this._label} completed (${this._value}) in ${elapsed.toFixed(1)} seconds`);
+		let elapsedSecs = (Date.now() - this._startTime) / 1000;
+		elapsedSecs = elapsedSecs || 1;
+
+		let rateAtSeconds = this._value / elapsedSecs;
+
+		this._logger(`${this._label} completed (${this._value}) in ${elapsedSecs.toFixed(1)} seconds (${rateAtSeconds.toFixed(1)}/sec)`);
 	}
 
 	value(){

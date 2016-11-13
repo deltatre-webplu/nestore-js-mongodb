@@ -11,18 +11,19 @@ class Bucket {
 		this._collection =  this._eventStore._db.collection(collectionName);
 	}
 
-	getCommitsStream(filters){
-		return this._getCommits(filters)
+	getCommitsStream(filters, options){
+		return this._getCommitsCursor(filters, options)
 		.stream();
 	}
 
-	getCommitsArray(filters){
-		return this._getCommits(filters)
+	getCommitsArray(filters, options){
+		return this._getCommitsCursor(filters, options)
 		.toArray();
 	}
 
-	_getCommits(filters){
+	_getCommitsCursor(filters, options){
 		filters = filters || {};
+		options = options || {};
 
 		let mongoFilters = {};
 		if (filters.streamId)
@@ -35,9 +36,15 @@ class Bucket {
 				mongoFilters._id["$lte"] = filters.toBucketRevision;
 		}
 
-		return this._collection
+		let cursor = this._collection
 		.find(mongoFilters)
 		.sort({ _id : 1 });
+
+		if (options.batchSize){
+			cursor = cursor.batchSize(options.batchSize);
+		}
+
+		return cursor;
 	}
 }
 

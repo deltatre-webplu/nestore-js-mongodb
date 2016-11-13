@@ -19,11 +19,15 @@ eventStore.connect()
 	let lastRevision = 0;
 
 	let stream = bucket.getCommitsStream({ fromBucketRevision: lastRevision });
-	return new Promise((resolve) => {
+	return new Promise((resolve, reject) => {
 		stream
 		.on("data", (doc) => {
 			progress.increment();
 			lastRevision = doc._id;
+		})
+		.on("error", (err) => {
+			stream.close();
+			reject(err);
 		})
 		.on("end", () => {
 			progress.end();
@@ -33,4 +37,8 @@ eventStore.connect()
 })
 .then(() => {
 	eventStore.close();
+})
+.catch((err) => {
+	eventStore.close();
+	console.error(err);
 });
