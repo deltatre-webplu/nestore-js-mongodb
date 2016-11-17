@@ -1,7 +1,7 @@
 {
   "name": "nestore-js-mongodb",
   "version": "1.0.0",
-  "description": "",
+  "description": "NEStore is an event store for NodeJs.",
   "main": "index.js",
   "scripts": {
     "test": "mocha ./tests/"
