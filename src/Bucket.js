@@ -1,6 +1,7 @@
 "use strict";
 
-//const debug = require("debug")("Bucket");
+const debug = require("debug")("Bucket");
+const WaitForCommitsStream = require("./WaitForCommitsStream");
 
 class Bucket {
 	constructor(eventStore, bucketName){
@@ -21,9 +22,29 @@ class Bucket {
 		.toArray();
 	}
 
+	waitForCommitsStream(filters, options){
+		filters = filters || {};
+		options = options || {};
+
+		filters = Object.assign({}, filters); // clone it to modify without problems
+		let bucket = this;
+		function _getNextCommits(fromBucketRevision){
+			filters.fromBucketRevision = fromBucketRevision;
+			return bucket._getCommitsCursor(filters, options);
+		}
+
+		return new WaitForCommitsStream({
+			fromBucketRevision : filters.fromBucketRevision,
+			getNextCommits : _getNextCommits,
+			waitInterval : options.waitInterval || 5000
+		});
+	}
+
 	_getCommitsCursor(filters, options){
 		filters = filters || {};
 		options = options || {};
+
+		debug(`_getCommitsCursor from ${filters.fromBucketRevision}`);
 
 		let mongoFilters = {};
 		if (filters.streamId)
@@ -46,6 +67,7 @@ class Bucket {
 
 		return cursor;
 	}
+
 }
 
 module.exports = Bucket;

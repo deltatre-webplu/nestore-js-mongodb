@@ -23,7 +23,7 @@ describe("EventStore", function() {
 
 	var SAMPLE_EVENT1 = {
 		"_id" : 1,
-		"StreamId" : helpers.toUuid("20000002-2002-2002-2002-200000000002"),
+		"StreamId" : helpers.stringToBinaryUUID("20000002-2002-2002-2002-200000000002"),
 		"StreamRevisionStart" : 0,
 		"StreamRevisionEnd" : 1,
 		"Dispatched" : true,
@@ -36,7 +36,7 @@ describe("EventStore", function() {
 	};
 	var SAMPLE_EVENT2 = {
 		"_id" : 2,
-		"StreamId" : helpers.toUuid("20000002-2002-2002-2002-200000000002"),
+		"StreamId" : helpers.stringToBinaryUUID("20000002-2002-2002-2002-200000000002"),
 		"StreamRevisionStart" : 1,
 		"StreamRevisionEnd" : 3,
 		"Dispatched" : true,
@@ -53,7 +53,7 @@ describe("EventStore", function() {
 	};
 	var SAMPLE_EVENT3 = {
 		"_id" : 3,
-		"StreamId" : helpers.toUuid("30000003-3003-3003-3003-300000000003"),
+		"StreamId" : helpers.stringToBinaryUUID("30000003-3003-3003-3003-300000000003"),
 		"StreamRevisionStart" : 0,
 		"StreamRevisionEnd" : 1,
 		"Dispatched" : true,
@@ -137,6 +137,33 @@ describe("EventStore", function() {
 
 			});
 
+			it("should be possible to wait for commits as stream", function() {
+				let stream = bucket.waitForCommitsStream({});
+				let docs = [];
+				return new Promise((resolve, reject) => {
+					stream
+					.on("data", (doc) => {
+						docs.push(doc);
+						if (doc._id == 3){
+							stream.close();
+						}
+					})
+					.on("close", () => {
+						resolve();
+					})
+					.on("end", () => {
+						reject(new Error("end should never be called"));
+					});
+				})
+				.then(() => {
+					assert.equal(docs.length, 3);
+					assert.deepEqual(docs[0], SAMPLE_EVENT1);
+					assert.deepEqual(docs[1], SAMPLE_EVENT2);
+					assert.deepEqual(docs[2], SAMPLE_EVENT3);
+				});
+
+			});
+
 			it("should be possible to read commits as array", function() {
 				return bucket.getCommitsArray({})
 				.then((docs) => {
@@ -156,7 +183,7 @@ describe("EventStore", function() {
 			});
 
 			it("should be possible to read commits filtering by stream id", function() {
-				return bucket.getCommitsArray({streamId: helpers.toUuid("30000003-3003-3003-3003-300000000003") })
+				return bucket.getCommitsArray({streamId: helpers.stringToBinaryUUID("30000003-3003-3003-3003-300000000003") })
 				.then((docs) => {
 					assert.equal(docs.length, 1);
 					assert.deepEqual(docs[0], SAMPLE_EVENT3);
