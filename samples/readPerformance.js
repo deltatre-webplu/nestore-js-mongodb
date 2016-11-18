@@ -15,7 +15,14 @@ eventStore.connect()
 
 	let lastRevision = 0;
 
-	let stream = bucket.getCommitsStream({ fromBucketRevision: lastRevision });
+	let filters = {
+		fromBucketRevision: lastRevision,
+		eventFilters : {
+			EventDateTime : { $gt : new Date(2016, 9, 1) }
+			//_t : /^(Entity)?Published\<.+\>/
+		}
+	};
+	let stream = bucket.getCommitsStream(filters);
 	return new Promise((resolve, reject) => {
 		stream
 		.on("data", (doc) => {
