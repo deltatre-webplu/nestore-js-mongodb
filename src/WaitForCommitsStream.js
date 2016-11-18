@@ -9,8 +9,8 @@ class WaitForCommitsStream extends ReadableStream {
 	constructor(opt) {
 		super({ objectMode : true });
 
-		this._fromBucketRevision = opt.fromBucketRevision;
-		this._getNextCommits = opt.getNextCommits;
+		this._getNextCommits = opt.getNextCommits; // callback function to get commits
+		this._fromBucketRevision = opt.fromBucketRevision; // initial revision
 		this._waitInterval = opt.waitInterval;
 		this._timeoutObject = null;
 
@@ -18,20 +18,27 @@ class WaitForCommitsStream extends ReadableStream {
 		this._source.pause();
 	}
 
+	// return a Promise
 	close(){
 		debug("close");
-		this._source.close();
+
+		if (this._source)
+			return this._source.close();
+
+		return Promise.resolve();
 	}
 
 	resume(){
 		debug("resume");
 		super.resume();
+
 		this._source.resume();
 	}
 
 	pause(){
 		debug("pause");
 		super.pause();
+
 		this._source.pause();
 	}
 

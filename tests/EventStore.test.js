@@ -1,9 +1,10 @@
 "use strict";
 
 const assert = require("chai").assert;
-const EventStore = require("../src/EventStore");
+const EventStore = require("../index").EventStore;
+const Projection = require("../index").Projection;
+const helpers = require("../index").MongoHelpers;
 const config = require("./config.json");
-const helpers = require("../src/mongoHelpers.js");
 
 describe("EventStore", function() {
 	this.timeout(20000);
@@ -162,6 +163,27 @@ describe("EventStore", function() {
 					assert.deepEqual(docs[2], SAMPLE_EVENT3);
 				});
 
+			});
+
+
+			it("should be possible to create a projection", function() {
+				let projection = new Projection(bucket);
+
+				let docs = [];
+				projection.on("commit", (commit) => {
+					docs.push(commit);
+					if (commit._id == 3){
+						projection.stop();
+					}
+				});
+
+				return projection.start()
+				.then(() => {
+					assert.equal(docs.length, 3);
+					assert.deepEqual(docs[0], SAMPLE_EVENT1);
+					assert.deepEqual(docs[1], SAMPLE_EVENT2);
+					assert.deepEqual(docs[2], SAMPLE_EVENT3);
+				});
 			});
 
 			it("should be possible to read commits as array", function() {

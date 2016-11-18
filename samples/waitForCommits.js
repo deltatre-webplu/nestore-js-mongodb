@@ -1,7 +1,7 @@
 "use strict";
 
-const EventStore = require("../src/EventStore");
-const helpers = require("../src/mongoHelpers.js");
+const EventStore = require("../index").EventStore;
+const helpers = require("../index").MongoHelpers;
 
 // set SAMPLE_URL=mongodb://localhost:27017/Forge
 const sampleUrl = process.env.SAMPLE_URL;

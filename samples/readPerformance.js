@@ -1,6 +1,6 @@
 "use strict";
 
-const EventStore = require("../src/EventStore");
+const EventStore = require("../index").EventStore;
 const ProgressLogger = require("progress-logger-js");
 
 // set SAMPLE_URL=mongodb://localhost:27017/Forge
