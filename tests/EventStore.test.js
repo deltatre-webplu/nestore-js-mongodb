@@ -196,6 +196,16 @@ describe("EventStore", function() {
 				});
 			});
 
+			it("should be possible to read commits filtering by event properties", function() {
+				return bucket.getCommitsArray({
+					eventFilters: { "Field1" : "X"}
+				})
+				.then((docs) => {
+					assert.equal(docs.length, 1);
+					assert.deepEqual(docs[0], SAMPLE_EVENT3);
+				});
+			});
+
 			it("should be possible to read commits filtering by bucket revision", function() {
 				return bucket.getCommitsArray({fromBucketRevision: 2, toBucketRevision: 2})
 				.then((docs) => {

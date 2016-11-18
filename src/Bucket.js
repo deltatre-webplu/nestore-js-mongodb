@@ -47,6 +47,14 @@ class Bucket {
 		debug(`_getCommitsCursor from ${filters.fromBucketRevision}`);
 
 		let mongoFilters = {};
+
+		if (filters.eventFilters){
+			Object.getOwnPropertyNames(filters.eventFilters)
+			.forEach(function(name) {
+				mongoFilters["Events." + name] = filters.eventFilters[name];
+			});
+		}
+
 		if (filters.streamId)
 			mongoFilters.StreamId = filters.streamId;
 		if (filters.fromBucketRevision || filters.toBucketRevision) {
@@ -56,6 +64,8 @@ class Bucket {
 			if (filters.toBucketRevision)
 				mongoFilters._id["$lte"] = filters.toBucketRevision;
 		}
+
+		debug("mongoFilters", mongoFilters);
 
 		let cursor = this._collection
 		.find(mongoFilters)

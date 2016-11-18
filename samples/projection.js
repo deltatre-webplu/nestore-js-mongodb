@@ -22,7 +22,12 @@ eventStore.connect()
 
 	setTimeout(() => projection.stop(), 20000);
 
-	return projection.start();
+	let filters = {
+		eventFilters : {
+			"EventDateTime" : { $gt: new Date(2016, 10, 18)}
+		}
+	};
+	return projection.start(filters);
 })
 .then(() => {
 	eventStore.close();
