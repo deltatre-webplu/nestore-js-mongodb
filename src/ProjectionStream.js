@@ -14,11 +14,9 @@ class ProjectionStream extends ReadableStream {
 		this._options = options;
 		this._options.waitInterval = this._options.waitInterval || 5000;
 
+		this._source = null;
 		this._timeoutObject = null;
 		this._closed = false;
-
-		this._nextStream();
-		this._source.pause();
 	}
 
 	// return a Promise
@@ -31,6 +29,8 @@ class ProjectionStream extends ReadableStream {
 		if (this._source)
 			return this._source.close();
 
+		// force a close event and exit
+		this.emit("close");
 		return Promise.resolve();
 	}
 
@@ -42,25 +42,31 @@ class ProjectionStream extends ReadableStream {
 		debug("resume");
 		super.resume();
 
-		this._source.resume();
+		if (this._source)
+			this._source.resume();
 	}
 
 	pause(){
 		debug("pause");
 		super.pause();
 
-		this._source.pause();
+		if (this._source)
+			this._source.pause();
 	}
 
+	// virtual method called by base class each time it needs more data
 	_read(){
-		this._source.resume();
+		debug("_read");
+
+		if (!this._timeoutObject)
+			this._startTimer(1);
 	}
 
-	_startTimer(){
+	_startTimer(interval){
 		this._stopTimer();
 		this._timeoutObject = setTimeout(
-			() => this._nextStream(),
-			this._options.waitInterval);
+			() => this._loadNextStream(),
+			interval || this._options.waitInterval);
 	}
 
 	_stopTimer(){
@@ -70,38 +76,51 @@ class ProjectionStream extends ReadableStream {
 		this._timeoutObject = null;
 	}
 
-	_nextStream(){
-		this._source = this._bucket._getCommitsCursor(this._filters, this._options);
+	_loadNextStream(){
+		// read last commit to know from where to start next time (note that I don't use a filter, to ensure that next time I start from next commits, if any)
+		this._bucket.lastCommit({}, this._options)
+		.then((lastCommit) => {
+			let lastBucketRevision = lastCommit ? lastCommit._id : 0;
 
-		this._source
-		.on("data", (doc) => {
-			this._filters.fromBucketRevision = doc._id + 1;
+			let sourceCursor = this._bucket._getCommitsCursor(this._filters, this._options);
+			this._source = sourceCursor;
 
-			if (!this.push(doc))
-				this._source.pause();
-		})
-		.on("error", (err) => {
-			debugSource("Error");
-			this.emit("error", err);
-		})
-		.on("close", () => {
-			debugSource("Closed");
-			this._stopTimer();
-			this.emit("close");
-		})
-		.on("end", () => {
-			debugSource("End");
+			sourceCursor
+			.on("data", (doc) => {
+				if (doc._id > lastBucketRevision) // if read doc contains new commits update lastBucketRevision
+					lastBucketRevision = doc._id;
 
-			if (!this.isClosed()){
-				debug("Waiting...");
-				this.emit("wait", { filters : this._filters });
-				this._startTimer();
+				if (!this.push(doc))
+					sourceCursor.close();
+			})
+			.on("error", (err) => {
+				debugSource("Error");
+				this.emit("error", err);
+			})
+			.on("close", () => {
+				debugSource("Closed");
+				this._stopTimer();
+				this.emit("close");
+			})
+			.on("end", () => {
+				debugSource("End");
+
+				if (!this.isClosed()){
+					debug("Waiting...");
+
+					// change the starting point of the next read
+					this._filters.fromBucketRevision = lastBucketRevision + 1;
+
+					this.emit("wait", { filters : this._filters });
+
+					this._startTimer();
+				}
+			});
+
+			if (this.isPaused()){
+				sourceCursor.pause();
 			}
 		});
-
-		if (this.isPaused()){
-			this._source.pause();
-		}
 	}
 }
 

@@ -29,11 +29,22 @@ class Bucket {
 		return new ProjectionStream(this, filters, options);
 	}
 
-	_getCommitsCursor(filters, options){
+	lastCommit(filters, options){
+		return this._getCommitsCursor(filters, options, { _id : -1 })
+		.limit(1)
+		.toArray()
+		.then((data) => {
+			if (data.length)
+				return data[0];
+
+			return null;
+		});
+	}
+
+	_getCommitsCursor(filters, options, sort){
 		filters = filters || {};
 		options = options || {};
-
-		debug(`_getCommitsCursor from ${filters.fromBucketRevision}`);
+		sort = sort || { _id : 1 };
 
 		let mongoFilters = {};
 
@@ -64,11 +75,11 @@ class Bucket {
 				mongoFilters._id["$lte"] = filters.toBucketRevision;
 		}
 
-		debug("mongoFilters", mongoFilters);
+		debug("_getCommitsCursor", mongoFilters);
 
 		let cursor = this._collection
 		.find(mongoFilters)
-		.sort({ _id : 1 });
+		.sort(sort);
 
 		if (options.batchSize){
 			cursor = cursor.batchSize(options.batchSize);

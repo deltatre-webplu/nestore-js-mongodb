@@ -18,8 +18,8 @@ eventStore.connect()
 	let filters = {
 		fromBucketRevision: lastRevision,
 		eventFilters : {
-			EventDateTime : { $gt : new Date(2015, 9, 1) }
-			//_t : /^(Entity)?Published\<.+\>/
+			//EventDateTime : { $gt : new Date(2015, 9, 1) }
+			//_t : /^(Entity)?Published\<.+\>$/
 		}
 	};
 	let stream = bucket.getCommitsStream(filters);

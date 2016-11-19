@@ -117,9 +117,10 @@ describe("EventStore", function() {
 		});
 
 		afterEach(function(){
-			if (!eventStore) return;
+			if (!eventStore || !eventStore._db)
+				return;
 
-			clearSampleBucket()
+			return clearSampleBucket()
 			.then(() => {
 				eventStore.close();
 			});
@@ -234,10 +235,46 @@ describe("EventStore", function() {
 				});
 			});
 
+			it("should be possible to create a projection stream and when wait for new events start from the last one", function() {
+				let projection = bucket.projectionStream({ eventFilters: { Field1: "Y" } }, {waitInterval : 100});
+				let docs = [];
+				let waitCalls = 0;
+
+				return new Promise((resolve, reject) => {
+					projection
+					.on("data", (doc) => {
+						docs.push(doc);
+						if (doc._id == 4){ // when last event is read close the projection
+							projection.close();
+						}
+					})
+					.on("wait", (data) => { // when first stream is completed add a new commit
+						waitCalls++;
+						assert.equal(data.filters.fromBucketRevision, 4); // check that the next stream will start from 4
+						insertSampleBucket([SAMPLE_EVENT4]);
+					})
+					.on("error", (err) => {
+						projection.close();
+						reject(err);
+					})
+					.on("close", () => {
+						resolve();
+					})
+					.on("end", () => {
+						reject(new Error("end should never be called"));
+					});
+				})
+				.then(() => {
+					assert.equal(waitCalls, 1);
+					assert.equal(docs.length, 1);
+					assert.deepEqual(docs[0], SAMPLE_EVENT4);
+				});
+			});
+
 			it("should be possible to create a projection and close it multiple times", function() {
 				let projection = bucket.projectionStream({}, {waitInterval : 100});
 
-				var projectionsCheck = new Promise((resolve, reject) => {
+				var projectionChecks = new Promise((resolve, reject) => {
 					projection
 					.on("error", (err) => {
 						projection.close();
@@ -253,7 +290,8 @@ describe("EventStore", function() {
 
 				return projection.close()
 				.then(() => projection.close())
-				.then(() => projectionsCheck);
+				.then(() => projection.close())
+				.then(() => projectionChecks);
 			});
 
 			it("should be possible to read commits as array", function() {
@@ -263,6 +301,13 @@ describe("EventStore", function() {
 					assert.deepEqual(docs[0], SAMPLE_EVENT1);
 					assert.deepEqual(docs[1], SAMPLE_EVENT2);
 					assert.deepEqual(docs[2], SAMPLE_EVENT3);
+				});
+			});
+
+			it("should be possible to get last commit", function() {
+				return bucket.lastCommit()
+				.then((doc) => {
+					assert.deepEqual(doc, SAMPLE_EVENT3);
 				});
 			});
 

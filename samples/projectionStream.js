@@ -46,7 +46,7 @@ eventStore.connect()
 			console.log("Published", helpers.binaryUUIDToString(publishEvent.AggregateId));
 	})
 	.on("wait", (data) => {
-		console.log("Wait...(press enter to exit) ", data.fromBucketRevision);
+		console.log("Wait...(press enter to exit) ", data.filters.fromBucketRevision);
 	})
 	.on("close", () => {
 		console.log("Closed");

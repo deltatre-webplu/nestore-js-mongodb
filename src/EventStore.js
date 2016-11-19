@@ -29,6 +29,9 @@ class EventStore {
 	}
 
 	bucket(bucketName){
+		if (!this._db)
+			throw new Error("Event store not connected");
+
 		return new Bucket(this, bucketName);
 	}
 }
