@@ -2,7 +2,6 @@
 
 const assert = require("chai").assert;
 const EventStore = require("../index").EventStore;
-const Projection = require("../index").Projection;
 const helpers = require("../index").MongoHelpers;
 const config = require("./config.json");
 
@@ -65,6 +64,19 @@ describe("EventStore", function() {
 			}
 		]
 	};
+	var SAMPLE_EVENT4 = {
+		"_id" : 4,
+		"StreamId" : helpers.stringToBinaryUUID("30000003-3003-3003-3003-300000000003"),
+		"StreamRevisionStart" : 1,
+		"StreamRevisionEnd" : 2,
+		"Dispatched" : true,
+		"Events" : [
+			{
+				"_t" : "MyEventX",
+				"Field1" : "Y"
+			}
+		]
+	};
 
 	before(function() {
 	});
@@ -75,26 +87,26 @@ describe("EventStore", function() {
 	describe("When connected", function(){
 		let eventStore;
 
-		function insertSampleBucket(db){
-			let col = db.collection(SAMPLE_COMMITS_COLLECTION);
-			return col.insertMany([SAMPLE_EVENT2, SAMPLE_EVENT3, SAMPLE_EVENT1]);
+		function insertSampleBucket(docs){
+			let col = eventStore._db.collection(SAMPLE_COMMITS_COLLECTION);
+			return col.insertMany(docs);
 		}
 
-		function clearSampleBucket(db){
-			let col = db.collection(SAMPLE_COMMITS_COLLECTION);
+		function clearSampleBucket(){
+			let col = eventStore._db.collection(SAMPLE_COMMITS_COLLECTION);
 			return col.drop();
 		}
 
 		beforeEach(function() {
 			eventStore = new EventStore(config);
 			return eventStore.connect()
-			.then(() => insertSampleBucket(eventStore._db));
+			.then(() => insertSampleBucket([SAMPLE_EVENT2, SAMPLE_EVENT3, SAMPLE_EVENT1]));
 		});
 
 		afterEach(function(){
 			if (!eventStore) return;
 
-			clearSampleBucket(eventStore._db)
+			clearSampleBucket()
 			.then(() => {
 				eventStore.close();
 			});
@@ -138,16 +150,21 @@ describe("EventStore", function() {
 
 			});
 
-			it("should be possible to wait for commits as stream", function() {
-				let stream = bucket.waitForCommitsStream({});
+			it("should be possible to create a projection stream", function() {
+				let projection = bucket.projectionStream();
 				let docs = [];
+
 				return new Promise((resolve, reject) => {
-					stream
+					projection
 					.on("data", (doc) => {
 						docs.push(doc);
-						if (doc._id == 3){
-							stream.close();
+						if (doc._id == 3){ // when last event is read close the projection
+							projection.close();
 						}
+					})
+					.on("error", (err) => {
+						projection.close();
+						reject(err);
 					})
 					.on("close", () => {
 						resolve();
@@ -165,25 +182,65 @@ describe("EventStore", function() {
 
 			});
 
-
-			it("should be possible to create a projection", function() {
-				let projection = new Projection(bucket);
-
+			it("should be possible to create a projection stream and wait for new events", function() {
+				let projection = bucket.projectionStream({}, {waitInterval : 100});
 				let docs = [];
-				projection.on("commit", (commit) => {
-					docs.push(commit);
-					if (commit._id == 3){
-						projection.stop();
-					}
-				});
+				let waitCalls = 0;
 
-				return projection.start()
+				return new Promise((resolve, reject) => {
+					projection
+					.on("data", (doc) => {
+						docs.push(doc);
+						if (doc._id == 4){ // when last event is read close the projection
+							projection.close();
+						}
+					})
+					.on("wait", (data) => { // when first stream is completed add a new commit
+						waitCalls++;
+						assert.equal(data.fromBucketRevision, 4);
+						insertSampleBucket([SAMPLE_EVENT4]);
+					})
+					.on("error", (err) => {
+						projection.close();
+						reject(err);
+					})
+					.on("close", () => {
+						resolve();
+					})
+					.on("end", () => {
+						reject(new Error("end should never be called"));
+					});
+				})
 				.then(() => {
-					assert.equal(docs.length, 3);
+					assert.equal(waitCalls, 1);
+					assert.equal(docs.length, 4);
 					assert.deepEqual(docs[0], SAMPLE_EVENT1);
 					assert.deepEqual(docs[1], SAMPLE_EVENT2);
 					assert.deepEqual(docs[2], SAMPLE_EVENT3);
+					assert.deepEqual(docs[3], SAMPLE_EVENT4);
 				});
+			});
+
+			it("should be possible to create a projection and close it multiple times", function() {
+				let projection = bucket.projectionStream({}, {waitInterval : 100});
+
+				var projectionsCheck = new Promise((resolve, reject) => {
+					projection
+					.on("error", (err) => {
+						projection.close();
+						reject(err);
+					})
+					.on("close", () => {
+						resolve();
+					})
+					.on("end", () => {
+						reject(new Error("end should never be called"));
+					});
+				});
+
+				return projection.close()
+				.then(() => projection.close())
+				.then(() => projectionsCheck);
 			});
 
 			it("should be possible to read commits as array", function() {

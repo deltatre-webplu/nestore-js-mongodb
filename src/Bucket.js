@@ -1,7 +1,7 @@
 "use strict";
 
 const debug = require("debug")("Bucket");
-const WaitForCommitsStream = require("./WaitForCommitsStream");
+const ProjectionStream = require("./ProjectionStream");
 
 class Bucket {
 	constructor(eventStore, bucketName){
@@ -22,7 +22,7 @@ class Bucket {
 		.toArray();
 	}
 
-	waitForCommitsStream(filters, options){
+	projectionStream(filters, options){
 		filters = filters || {};
 		options = options || {};
 
@@ -33,7 +33,7 @@ class Bucket {
 			return bucket._getCommitsCursor(filters, options);
 		}
 
-		return new WaitForCommitsStream({
+		return new ProjectionStream({
 			fromBucketRevision : filters.fromBucketRevision,
 			getNextCommits : _getNextCommits,
 			waitInterval : options.waitInterval || 5000
