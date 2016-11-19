@@ -26,18 +26,7 @@ class Bucket {
 		filters = filters || {};
 		options = options || {};
 
-		filters = Object.assign({}, filters); // clone it to modify without problems
-		let bucket = this;
-		function _getNextCommits(fromBucketRevision){
-			filters.fromBucketRevision = fromBucketRevision;
-			return bucket._getCommitsCursor(filters, options);
-		}
-
-		return new ProjectionStream({
-			fromBucketRevision : filters.fromBucketRevision,
-			getNextCommits : _getNextCommits,
-			waitInterval : options.waitInterval || 5000
-		});
+		return new ProjectionStream(this, filters, options);
 	}
 
 	_getCommitsCursor(filters, options){
@@ -53,6 +42,16 @@ class Bucket {
 			.forEach(function(name) {
 				mongoFilters["Events." + name] = filters.eventFilters[name];
 			});
+		}
+
+		if (!filters.hasOwnProperty("dispatched")) // by default returns only dispatched
+			mongoFilters.Dispatched = true;
+		else if (filters.dispatched == 0) // returns only undispatched
+			mongoFilters.Dispatched = false;
+		else if (filters.dispatched == 1) // returns only dispatched
+			mongoFilters.Dispatched = true;
+		else if (filters.dispatched == -1) {
+			// returns all
 		}
 
 		if (filters.streamId)

@@ -77,6 +77,19 @@ describe("EventStore", function() {
 			}
 		]
 	};
+	var SAMPLE_EVENT4_NOT_DISPATCHED = {
+		"_id" : 4,
+		"StreamId" : helpers.stringToBinaryUUID("30000003-3003-3003-3003-300000000003"),
+		"StreamRevisionStart" : 1,
+		"StreamRevisionEnd" : 2,
+		"Dispatched" : false,
+		"Events" : [
+			{
+				"_t" : "MyEventX",
+				"Field1" : "Y"
+			}
+		]
+	};
 
 	before(function() {
 	});
@@ -197,7 +210,7 @@ describe("EventStore", function() {
 					})
 					.on("wait", (data) => { // when first stream is completed add a new commit
 						waitCalls++;
-						assert.equal(data.fromBucketRevision, 4);
+						assert.equal(data.filters.fromBucketRevision, 4);
 						insertSampleBucket([SAMPLE_EVENT4]);
 					})
 					.on("error", (err) => {
@@ -244,12 +257,44 @@ describe("EventStore", function() {
 			});
 
 			it("should be possible to read commits as array", function() {
-				return bucket.getCommitsArray({})
+				return bucket.getCommitsArray()
 				.then((docs) => {
 					assert.equal(docs.length, 3);
 					assert.deepEqual(docs[0], SAMPLE_EVENT1);
 					assert.deepEqual(docs[1], SAMPLE_EVENT2);
 					assert.deepEqual(docs[2], SAMPLE_EVENT3);
+				});
+			});
+
+			it("should be possible to read commits and undispatched are not returned", function() {
+				return insertSampleBucket([SAMPLE_EVENT4_NOT_DISPATCHED])
+				.then(() => bucket.getCommitsArray())
+				.then((docs) => {
+					assert.equal(docs.length, 3);
+					assert.deepEqual(docs[0], SAMPLE_EVENT1);
+					assert.deepEqual(docs[1], SAMPLE_EVENT2);
+					assert.deepEqual(docs[2], SAMPLE_EVENT3);
+				});
+			});
+
+			it("should be possible to read commits with also undispatched", function() {
+				return insertSampleBucket([SAMPLE_EVENT4_NOT_DISPATCHED])
+				.then(() => bucket.getCommitsArray({dispatched : -1}))
+				.then((docs) => {
+					assert.equal(docs.length, 4);
+					assert.deepEqual(docs[0], SAMPLE_EVENT1);
+					assert.deepEqual(docs[1], SAMPLE_EVENT2);
+					assert.deepEqual(docs[2], SAMPLE_EVENT3);
+					assert.deepEqual(docs[3], SAMPLE_EVENT4_NOT_DISPATCHED);
+				});
+			});
+
+			it("should be possible to read commits only undispatched", function() {
+				return insertSampleBucket([SAMPLE_EVENT4_NOT_DISPATCHED])
+				.then(() => bucket.getCommitsArray({dispatched : 0}))
+				.then((docs) => {
+					assert.equal(docs.length, 1);
+					assert.deepEqual(docs[0], SAMPLE_EVENT4_NOT_DISPATCHED);
 				});
 			});
 

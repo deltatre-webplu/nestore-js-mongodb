@@ -6,16 +6,18 @@ const debugSource = require("debug")("ProjectionStream.source");
 const ReadableStream = require("stream").Readable;
 
 class ProjectionStream extends ReadableStream {
-	constructor(opt) {
+	constructor(bucket, filters, options) {
 		super({ objectMode : true });
 
-		this._getNextCommits = opt.getNextCommits; // callback function to get commits
-		this._fromBucketRevision = opt.fromBucketRevision; // initial revision
-		this._waitInterval = opt.waitInterval;
+		this._bucket = bucket;
+		this._filters = Object.assign({}, filters);
+		this._options = options;
+		this._options.waitInterval = this._options.waitInterval || 5000;
+
 		this._timeoutObject = null;
 		this._closed = false;
 
-		this._readNextCommits();
+		this._nextStream();
 		this._source.pause();
 	}
 
@@ -57,8 +59,8 @@ class ProjectionStream extends ReadableStream {
 	_startTimer(){
 		this._stopTimer();
 		this._timeoutObject = setTimeout(
-			() => this._readNextCommits(),
-			this._waitInterval);
+			() => this._nextStream(),
+			this._options.waitInterval);
 	}
 
 	_stopTimer(){
@@ -68,12 +70,12 @@ class ProjectionStream extends ReadableStream {
 		this._timeoutObject = null;
 	}
 
-	_readNextCommits(){
-		this._source = this._getNextCommits(this._fromBucketRevision);
+	_nextStream(){
+		this._source = this._bucket._getCommitsCursor(this._filters, this._options);
 
 		this._source
 		.on("data", (doc) => {
-			this._fromBucketRevision = doc._id + 1;
+			this._filters.fromBucketRevision = doc._id + 1;
 
 			if (!this.push(doc))
 				this._source.pause();
@@ -92,7 +94,7 @@ class ProjectionStream extends ReadableStream {
 
 			if (!this.isClosed()){
 				debug("Waiting...");
-				this.emit("wait", { fromBucketRevision : this._fromBucketRevision });
+				this.emit("wait", { filters : this._filters });
 				this._startTimer();
 			}
 		});

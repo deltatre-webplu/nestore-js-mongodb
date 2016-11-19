@@ -18,7 +18,7 @@ eventStore.connect()
 	let filters = {
 		fromBucketRevision: lastRevision,
 		eventFilters : {
-			EventDateTime : { $gt : new Date(2016, 9, 1) }
+			EventDateTime : { $gt : new Date(2015, 9, 1) }
 			//_t : /^(Entity)?Published\<.+\>/
 		}
 	};
