@@ -1,7 +1,7 @@
 "use strict";
 
 const assert = require("chai").assert;
-const helpers = require("../src/mongoHelpers.js");
+const helpers = require("../index").MongoHelpers;
 
 describe("mongoHelpers", function() {
 

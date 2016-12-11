@@ -19,7 +19,6 @@ describe("EventStore", function() {
 	}
 
 	const SAMPLE_BUCKETNAME = makeId();
-	const SAMPLE_COMMITS_COLLECTION = `${SAMPLE_BUCKETNAME}.commits`;
 
 	var SAMPLE_EVENT1 = {
 		"_id" : 1,
@@ -101,12 +100,12 @@ describe("EventStore", function() {
 		let eventStore;
 
 		function insertSampleBucket(docs){
-			let col = eventStore._db.collection(SAMPLE_COMMITS_COLLECTION);
+			let col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
 			return col.insertMany(docs);
 		}
 
 		function clearSampleBucket(){
-			let col = eventStore._db.collection(SAMPLE_COMMITS_COLLECTION);
+			let col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
 			return col.drop();
 		}
 
@@ -117,7 +116,7 @@ describe("EventStore", function() {
 		});
 
 		afterEach(function(){
-			if (!eventStore || !eventStore._db)
+			if (!eventStore || !eventStore.db)
 				return;
 
 			return clearSampleBucket()
@@ -127,7 +126,7 @@ describe("EventStore", function() {
 		});
 
 		it("should have a database instance", function() {
-			assert.isNotNull(eventStore._db);
+			assert.isNotNull(eventStore.db);
 		});
 
 		describe("Giving a bucket", function(){
@@ -139,8 +138,8 @@ describe("EventStore", function() {
 
 			it("should be possible to get a bucket instance", function() {
 				assert.isNotNull(bucket);
-				assert.equal(bucket._bucketName, SAMPLE_BUCKETNAME);
-				assert.equal(bucket._eventStore, eventStore);
+				assert.equal(bucket.bucketName, SAMPLE_BUCKETNAME);
+				assert.equal(bucket.eventStore, eventStore);
 			});
 
 			it("should be possible to read commits as stream", function() {

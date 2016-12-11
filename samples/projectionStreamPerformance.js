@@ -1,7 +1,7 @@
 "use strict";
 
 const EventStore = require("../index").EventStore;
-const ProgressLogger = require("progress-logger-js");
+const ProgressLogger = require("progress-logger-js").ProgressLogger;
 
 // set SAMPLE_URL=mongodb://localhost:27017/Forge
 const sampleUrl = process.env.SAMPLE_URL;
@@ -39,9 +39,9 @@ eventStore.connect()
 	})
 	.on("close", () => {
 		progress.end();
+		console.log("Enter to exit");
 	});
 
-	console.log("Enter to exit");
 	return waitForEnter();
 })
 .then(() => {

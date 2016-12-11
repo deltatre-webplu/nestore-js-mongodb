@@ -3,6 +3,7 @@
   "version": "1.2.0",
   "description": "NEStore is an event store for NodeJs.",
   "main": "index.js",
+  "typings": "index.d.ts",
   "scripts": {
     "test": "mocha ./tests/"
   },
@@ -18,9 +19,13 @@
   "homepage": "https://github.com/deltatre-webplu/nestore-js-mongodb#readme",
   "dependencies": {
     "debug": "^2.2.0",
-    "mongodb": "^2.2.11"
+    "mongodb": "^2.2.11",
+    "progress-logger-js": "^0.4.0",
+    "@types/mongodb": "^2.1.36",
+    "@types/node": "0.0.2"
   },
   "devDependencies": {
+    "@types/debug": "0.0.29",
     "chai": "^3.4.1",
     "mocha": "^2.3.3",
     "progress-logger-js": "^0.1.0"
