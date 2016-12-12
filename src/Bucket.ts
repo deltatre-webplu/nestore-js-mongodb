@@ -4,7 +4,7 @@ import {EventStore} from "./EventStore";
 import {Readable as ReadableStream} from "stream";
 import {Collection as MongoCollection, Cursor as MongoCursor} from "mongodb";
 
-import {CommitsFilters, CommitsOptions, CommitData} from "./nestore-types";
+import {CommitsFilters, CommitsOptions, CommitData, ProjectionStreamOptions} from "./nestore-types";
 
 const debug = createDebug("nestore.Bucket");
 
@@ -28,7 +28,7 @@ export class Bucket {
 		.toArray();
 	}
 
-	projectionStream(filters? : CommitsFilters, options? : CommitsOptions) : ProjectionStream{
+	projectionStream(filters? : CommitsFilters, options? : ProjectionStreamOptions) : ProjectionStream{
 		filters = filters || {};
 		options = options || {};
 
