@@ -1,5 +1,6 @@
 import * as createDebug from "debug";
 import {Readable as ReadableStream} from "stream";
+// use module augmentation to add isPaused because is missing...
 declare module "stream" {
     interface Readable {
         isPaused(): Boolean;
