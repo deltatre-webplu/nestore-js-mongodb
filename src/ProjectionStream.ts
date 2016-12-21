@@ -8,7 +8,7 @@ declare module "stream" {
 }
 
 import {Bucket} from "./Bucket";
-import {CommitsFilters, ProjectionStreamOptions} from "./nestore-types";
+import {CommitsFilters, ProjectionStreamOptions, CommitData} from "./nestore-types";
 import {Cursor as MongoCursor} from "mongodb";
 
 const debug = createDebug("nestore.ProjectionStream");
@@ -52,24 +52,34 @@ export class ProjectionStream extends ReadableStream {
 		return this.closed;
 	}
 
-	resume() : ProjectionStream{
+	resume() : ReadableStream{
 		debug("resume");
 		super.resume();
 
 		if (this.source)
 			this.source.resume();
 
-		return this;
+    return <any>this; // TODO how can I return base instance?
 	}
 
-	pause() : ProjectionStream {
+  on(event: "close", listener: () => void): this;
+  on(event: "data", listener: (chunk: Buffer | string | CommitData) => void): this;
+  on(event: "end", listener: () => void): this;
+  on(event: "readable", listener: () => void): this;
+  on(event: "error", listener: (err: Error) => void): this;
+  on(event: "wait", listener: (info: { filters : CommitsFilters }) => void): this;
+  on(event: string, listener: Function): this{
+    return super.on(event, listener);
+  }
+
+	pause() : ReadableStream {
 		debug("pause");
 		super.pause();
 
 		if (this.source)
 			this.source.pause();
 
-		return this;
+		return <any>this; // TODO how can I return base instance?
 	}
 
 	// virtual method called by base class each time it needs more data

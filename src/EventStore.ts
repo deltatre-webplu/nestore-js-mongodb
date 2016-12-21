@@ -7,7 +7,7 @@ export interface EventStoreOptions {
 }
 
 export class EventStore {
-	private db : MongoDatabase;
+	db : MongoDatabase;
 
 	constructor(private options : EventStoreOptions){
 	}

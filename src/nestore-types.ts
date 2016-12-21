@@ -1,7 +1,9 @@
+import {Binary as MongoDbBinary} from "mongodb";
+
 export interface CommitsFilters {
 	dispatched? : number;
 	eventFilters? : any;
-	streamId? : string;
+	streamId? : MongoDbBinary;
 	fromBucketRevision? : number;
 	toBucketRevision? : number;
 }

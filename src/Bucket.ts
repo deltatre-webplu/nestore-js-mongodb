@@ -12,10 +12,15 @@ export class Bucket {
 	private collection : MongoCollection;
 
 	constructor(
-		private eventStore : EventStore,
-		private bucketName : string){
+		readonly eventStore : EventStore,
+		readonly bucketName : string){
 
 		this.collection =  this.eventStore.mongoCollection(bucketName);
+	}
+
+	getCommitById(id : number) : Promise<CommitData> {
+		return this.collection
+		.findOne({_id : id});
 	}
 
 	getCommitsStream(filters? : CommitsFilters, options? : CommitsOptions) : ReadableStream{
@@ -47,7 +52,24 @@ export class Bucket {
 		});
 	}
 
-	_getCommitsCursor(filters? : CommitsFilters, options? : CommitsOptions, sort?) : MongoCursor{
+	async updateCommit(id : number, events : Array<any>) : Promise<CommitData> {
+		let commit = await this.getCommitById(id);
+		if (!commit)
+			return null;
+
+		if (events) {
+			if (commit.Events.length != events.length)
+				throw new Error("Events count must be the same");
+
+			commit.Events = events;
+		}
+
+		await this.collection.updateOne({_id : id}, commit);
+
+		return commit;
+	}
+
+	_getCommitsCursor(filters? : CommitsFilters, options? : CommitsOptions, sort? : any) : MongoCursor{
 		filters = filters || {};
 		options = options || {};
 		sort = sort || { _id : 1 };

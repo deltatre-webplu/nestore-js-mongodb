@@ -31,6 +31,9 @@ class ProjectionStream extends stream_1.Readable {
             this.source.resume();
         return this;
     }
+    on(event, listener) {
+        return super.on(event, listener);
+    }
     pause() {
         debug("pause");
         super.pause();

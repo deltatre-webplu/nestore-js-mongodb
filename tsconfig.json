@@ -7,14 +7,16 @@
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "declaration": true,
-        "noImplicitAny": false,
+        "noImplicitAny": true,
         "noImplicitUseStrict": false,
         "removeComments": true,
         "noLib": false,
         "preserveConstEnums": true,
-        "suppressImplicitAnyIndexErrors": true
+        "suppressImplicitAnyIndexErrors": true,
+        "types":["mocha"]
     },
     "exclude": [
+        "**/*.d.ts",
         "node_modules",
         "typings/browser",
         "typings/browser.d.ts"

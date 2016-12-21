@@ -1,4 +1,4 @@
-import { MongoClientOptions, Collection as MongoCollection } from "mongodb";
+import { MongoClientOptions, Db as MongoDatabase, Collection as MongoCollection } from "mongodb";
 import { Bucket } from "./Bucket";
 export interface EventStoreOptions {
     url: string;
@@ -6,7 +6,7 @@ export interface EventStoreOptions {
 }
 export declare class EventStore {
     private options;
-    private _db;
+    db: MongoDatabase;
     constructor(options: EventStoreOptions);
     connect(): Promise<EventStore>;
     close(): Promise<void>;
