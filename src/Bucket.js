@@ -4,9 +4,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const createDebug = require("debug");
 const ProjectionStream_1 = require("./ProjectionStream");
 const debug = createDebug("nestore.Bucket");
@@ -47,7 +48,7 @@ class Bucket {
         return __awaiter(this, void 0, void 0, function* () {
             let commit = yield this.getCommitById(id);
             if (!commit)
-                return null;
+                return undefined;
             if (events) {
                 if (commit.Events.length != events.length)
                     throw new Error("Events count must be the same");
@@ -62,10 +63,11 @@ class Bucket {
         options = options || {};
         sort = sort || { _id: 1 };
         let mongoFilters = {};
-        if (filters.eventFilters) {
-            Object.getOwnPropertyNames(filters.eventFilters)
+        const eFilters = filters.eventFilters;
+        if (eFilters) {
+            Object.getOwnPropertyNames(eFilters)
                 .forEach(function (name) {
-                mongoFilters["Events." + name] = filters.eventFilters[name];
+                mongoFilters["Events." + name] = eFilters[name];
             });
         }
         if (!filters.hasOwnProperty("dispatched"))
@@ -75,6 +77,7 @@ class Bucket {
         else if (filters.dispatched == 1)
             mongoFilters.Dispatched = true;
         else if (filters.dispatched == -1) {
+            // returns all
         }
         if (filters.streamId)
             mongoFilters.StreamId = filters.streamId;

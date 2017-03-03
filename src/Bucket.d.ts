@@ -13,6 +13,6 @@ export declare class Bucket {
     getCommitsArray(filters?: CommitsFilters, options?: CommitsOptions): Promise<CommitData[]>;
     projectionStream(filters?: CommitsFilters, options?: ProjectionStreamOptions): ProjectionStream;
     lastCommit(filters?: CommitsFilters, options?: CommitsOptions): Promise<CommitData>;
-    updateCommit(id: number, events: Array<any>): Promise<CommitData>;
-    _getCommitsCursor(filters?: CommitsFilters, options?: CommitsOptions, sort?: any): MongoCursor;
+    updateCommit(id: number, events: Array<any>): Promise<CommitData | undefined>;
+    _getCommitsCursor(filters?: CommitsFilters, options?: CommitsOptions, sort?: any): MongoCursor<CommitData>;
 }

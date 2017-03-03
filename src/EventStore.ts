@@ -7,7 +7,7 @@ export interface EventStoreOptions {
 }
 
 export class EventStore {
-	db : MongoDatabase;
+	db : MongoDatabase | undefined;
 
 	constructor(private options : EventStoreOptions){
 	}
@@ -21,7 +21,7 @@ export class EventStore {
 	async close() : Promise<void>{
 		if (this.db){
 			await this.db.close();
-			this.db = null;
+			this.db = undefined;
 		}
 	}
 

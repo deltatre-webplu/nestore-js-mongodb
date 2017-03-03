@@ -4,9 +4,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const chai_1 = require("chai");
 const index_1 = require("../index");
 const config = require("./config.json");
@@ -228,7 +229,7 @@ describe("EventStore", function () {
                     })
                         .on("wait", (data) => {
                         waitCalls++;
-                        chai_1.assert.equal(data.filters.fromBucketRevision, 4);
+                        chai_1.assert.equal(data.filters.fromBucketRevision, 4); // check that the next stream will start from 4
                         insertSampleBucket([SAMPLE_EVENT4]);
                     })
                         .on("error", (err) => {
@@ -338,6 +339,7 @@ describe("EventStore", function () {
             it("should not be possible to update commit events with a different events number", function () {
                 return __awaiter(this, void 0, void 0, function* () {
                     let doc = yield bucket.getCommitById(SAMPLE_EVENT1._id);
+                    // Clone events
                     let newEvents = [
                         ...SAMPLE_EVENT1.Events,
                         ...SAMPLE_EVENT2.Events,
@@ -355,13 +357,16 @@ describe("EventStore", function () {
                 return __awaiter(this, void 0, void 0, function* () {
                     let doc = yield bucket.getCommitById(SAMPLE_EVENT1._id);
                     chai_1.assert.deepEqual(doc, SAMPLE_EVENT1);
+                    // Clone events
                     let newEvents = Array.from(SAMPLE_EVENT1.Events);
                     newEvents[0] = Object.assign({}, newEvents[0]);
                     newEvents[0].Field1 = "A modified";
+                    // Update events
                     yield bucket.updateCommit(SAMPLE_EVENT1._id, newEvents);
                     doc = yield bucket.getCommitById(SAMPLE_EVENT1._id);
                     chai_1.assert.notDeepEqual(doc, SAMPLE_EVENT1);
                     chai_1.assert.equal(doc.Events[0].Field1, "A modified");
+                    // if I restore the old value then all other properties should be the same
                     doc.Events[0].Field1 = SAMPLE_EVENT1.Events[0].Field1;
                     chai_1.assert.deepEqual(doc, SAMPLE_EVENT1);
                 });

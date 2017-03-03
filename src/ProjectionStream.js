@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const createDebug = require("debug");
 const stream_1 = require("stream");
 const debug = createDebug("nestore.ProjectionStream");
@@ -8,16 +9,18 @@ class ProjectionStream extends stream_1.Readable {
         super({ objectMode: true });
         this.bucket = bucket;
         this.closed = false;
-        this.filters = Object.assign({}, filters);
-        this.options = Object.assign({}, options);
+        this.filters = Object.assign({}, filters); // clone it because I will modify it...
+        this.options = Object.assign({}, options); // clone it because I will modify it...
         this.options.waitInterval = this.options.waitInterval || 5000;
     }
+    // return a Promise
     close() {
         debug("close");
         this.closed = true;
         this._stopTimer();
         if (this.source)
             return this.source.close();
+        // force a close event and exit
         this.emit("close");
         return Promise.resolve();
     }
@@ -29,7 +32,7 @@ class ProjectionStream extends stream_1.Readable {
         super.resume();
         if (this.source)
             this.source.resume();
-        return this;
+        return this; // TODO how can I return base instance?
     }
     on(event, listener) {
         return super.on(event, listener);
@@ -39,8 +42,9 @@ class ProjectionStream extends stream_1.Readable {
         super.pause();
         if (this.source)
             this.source.pause();
-        return this;
+        return this; // TODO how can I return base instance?
     }
+    // virtual method called by base class each time it needs more data
     _read() {
         debug("_read");
         if (!this.timeoutObj && !this.isClosed())
@@ -57,10 +61,13 @@ class ProjectionStream extends stream_1.Readable {
         if (this.timeoutObj) {
             clearTimeout(this.timeoutObj);
         }
-        this.timeoutObj = null;
+        this.timeoutObj = undefined;
     }
     _loadNextStream() {
         debug("_loadNextStream");
+        // read last commit to know from where to start next time
+        //  (note that I don't use a filter, to ensure that next time I start from next commits, if any)
+        //  TODO Think if there is a way to exclude this call for performance reason, at least after first calls...
         this.bucket.lastCommit({}, this.options)
             .then((lastCommit) => {
             let lastBucketRevision = lastCommit ? lastCommit._id : 0;
@@ -86,6 +93,7 @@ class ProjectionStream extends stream_1.Readable {
                 debugSource("End");
                 if (!this.isClosed()) {
                     debug("Waiting...");
+                    // change the starting point of the next read
                     this.filters.fromBucketRevision = lastBucketRevision + 1;
                     this.emit("wait", { filters: this.filters });
                     this._startTimer();

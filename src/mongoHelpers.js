@@ -1,7 +1,10 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const mongodb_1 = require("mongodb");
+// Based on:
+// https://github.com/mongodb/mongo-csharp-driver/blob/master/uuidhelpers.js
 function stringToBinaryUUID(value) {
-    var hex = value.replace(/[{}-]/g, "");
+    var hex = value.replace(/[{}-]/g, ""); // remove extra characters
     var buffer = new Buffer(hex, "hex");
     return new mongodb_1.Binary(buffer, mongodb_1.Binary.SUBTYPE_UUID);
 }

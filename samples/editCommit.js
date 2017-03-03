@@ -4,10 +4,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const index_1 = require("../index");
+// set SAMPLE_URL=mongodb://localhost:27017/forge-events
 const sampleUrl = process.env.SAMPLE_URL;
 let eventStore = new index_1.EventStore({ url: sampleUrl });
 const IS_TITLE_SET_REGEX = /^TitleSet\<Story\>$/;

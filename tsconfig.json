@@ -3,27 +3,21 @@
         "target": "es6",
         "module": "commonjs",
         "moduleResolution": "node",
-        "isolatedModules": false,
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
-        "declaration": true,
+
         "noImplicitAny": true,
-        "noImplicitUseStrict": false,
-        "removeComments": true,
-        "noLib": false,
-        "preserveConstEnums": true,
-        "suppressImplicitAnyIndexErrors": true,
+        "strictNullChecks": true,
+        "noUnusedParameters": false,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noFallthroughCasesInSwitch": true,
+    
+        "declaration": true,
+        
         "types":["mocha"]
     },
     "exclude": [
         "**/*.d.ts",
-        "node_modules",
-        "typings/browser",
-        "typings/browser.d.ts"
+        "node_modules"
     ],
-    "compileOnSave": true,
-    "buildOnSave": false,
-    "atom": {
-        "rewriteTsconfig": false
-    }
+    "compileOnSave": true
 }

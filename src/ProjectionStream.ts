@@ -19,8 +19,8 @@ export class ProjectionStream extends ReadableStream {
 	private filters : CommitsFilters;
 	private options : ProjectionStreamOptions;
 	private closed : Boolean = false;
-	private source : MongoCursor;
-	private timeoutObj : NodeJS.Timer;
+	private source : MongoCursor<CommitData>;
+	private timeoutObj : number | undefined;
 
 	constructor(
 		private bucket:Bucket,
@@ -106,7 +106,7 @@ export class ProjectionStream extends ReadableStream {
 		if (this.timeoutObj){
 			clearTimeout(this.timeoutObj);
 		}
-		this.timeoutObj = null;
+		this.timeoutObj = undefined;
 	}
 
 	private _loadNextStream(){

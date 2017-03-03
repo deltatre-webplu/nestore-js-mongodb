@@ -44,7 +44,7 @@ export class Bucket {
 		return this._getCommitsCursor(filters, options, { _id : -1 })
 		.limit(1)
 		.toArray()
-		.then((data) => {
+		.then((data: Array<any>) => {
 			if (data.length)
 				return data[0];
 
@@ -52,10 +52,10 @@ export class Bucket {
 		});
 	}
 
-	async updateCommit(id : number, events : Array<any>) : Promise<CommitData> {
+	async updateCommit(id : number, events : Array<any>) : Promise<CommitData | undefined> {
 		let commit = await this.getCommitById(id);
 		if (!commit)
-			return null;
+			return undefined;
 
 		if (events) {
 			if (commit.Events.length != events.length)
@@ -69,17 +69,18 @@ export class Bucket {
 		return commit;
 	}
 
-	_getCommitsCursor(filters? : CommitsFilters, options? : CommitsOptions, sort? : any) : MongoCursor{
+	_getCommitsCursor(filters? : CommitsFilters, options? : CommitsOptions, sort? : any) : MongoCursor<CommitData> {
 		filters = filters || {};
 		options = options || {};
 		sort = sort || { _id : 1 };
 
 		let mongoFilters : any = {};
 
-		if (filters.eventFilters){
-			Object.getOwnPropertyNames(filters.eventFilters)
+		const eFilters = filters.eventFilters;
+		if (eFilters){
+			Object.getOwnPropertyNames(eFilters)
 			.forEach(function(name) {
-				mongoFilters["Events." + name] = filters.eventFilters[name];
+				mongoFilters["Events." + name] = eFilters[name];
 			});
 		}
 

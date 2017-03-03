@@ -6,7 +6,7 @@ export interface EventStoreOptions {
 }
 export declare class EventStore {
     private options;
-    db: MongoDatabase;
+    db: MongoDatabase | undefined;
     constructor(options: EventStoreOptions);
     connect(): Promise<EventStore>;
     close(): Promise<void>;
