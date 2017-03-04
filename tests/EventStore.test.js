@@ -12,15 +12,8 @@ const chai_1 = require("chai");
 const index_1 = require("../index");
 const config = require("./config.json"); // tslint:disable-line
 describe("EventStore", function () {
+    this.slow(500);
     this.timeout(20000);
-    function makeId() {
-        let text = "";
-        const possible = "abcdefghijklmnopqrstuvwxyz";
-        for (let i = 0; i < 5; i++) {
-            text += possible.charAt(Math.floor(Math.random() * possible.length));
-        }
-        return text;
-    }
     const SAMPLE_BUCKETNAME = makeId();
     const SAMPLE_EVENT1 = {
         _id: 1,
@@ -352,6 +345,7 @@ describe("EventStore", function () {
                     chai_1.assert.equal(typeof doc._id, "number");
                     chai_1.assert.equal(typeof doc.StreamId, "string");
                     chai_1.assert.isTrue(doc.Events instanceof Array);
+                    chai_1.assert.deepEqual(doc, SAMPLE_EVENT1);
                 });
             });
             it("should not be possible to update commit events with a different events number", function () {
@@ -395,4 +389,12 @@ describe("EventStore", function () {
         });
     });
 });
+function makeId() {
+    let text = "";
+    const possible = "abcdefghijklmnopqrstuvwxyz";
+    for (let i = 0; i < 5; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
+}
 //# sourceMappingURL=EventStore.test.js.map

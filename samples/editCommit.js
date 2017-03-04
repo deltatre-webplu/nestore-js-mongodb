@@ -11,17 +11,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const index_1 = require("../index");
 // set SAMPLE_URL=mongodb://localhost:27017/forge-events
 const sampleUrl = process.env.SAMPLE_URL;
-let eventStore = new index_1.EventStore({ url: sampleUrl });
+const eventStore = new index_1.EventStore({ url: sampleUrl });
 const IS_TITLE_SET_REGEX = /^TitleSet\<Story\>$/;
 function getCommitsToUpdate(bucket) {
     return new Promise((resolve, reject) => {
-        let commitsToUpdate = new Array();
-        let stream = bucket.getCommitsStream();
+        const commitsToUpdate = new Array();
+        const stream = bucket.getCommitsStream();
         stream
             .on("data", (doc) => {
-            let titleSetEvents = doc.Events.filter((e) => IS_TITLE_SET_REGEX.test(e._t));
-            if (titleSetEvents.length > 0)
+            const titleSetEvents = doc.Events.filter((e) => IS_TITLE_SET_REGEX.test(e._t));
+            if (titleSetEvents.length > 0) {
                 commitsToUpdate.push(doc);
+            }
         })
             .on("error", (err) => {
             reject(err);
@@ -33,9 +34,9 @@ function getCommitsToUpdate(bucket) {
 }
 function update(bucket, commits) {
     return __awaiter(this, void 0, void 0, function* () {
-        for (let commit of commits) {
-            let titleSetEvents = commit.Events.filter((e) => IS_TITLE_SET_REGEX.test(e._t));
-            for (let e of titleSetEvents) {
+        for (const commit of commits) {
+            const titleSetEvents = commit.Events.filter((e) => IS_TITLE_SET_REGEX.test(e._t));
+            for (const e of titleSetEvents) {
                 e.Title += "!";
             }
             yield bucket.updateCommit(commit._id, commit.Events);
@@ -46,8 +47,8 @@ function doWork() {
     return __awaiter(this, void 0, void 0, function* () {
         yield eventStore.connect();
         try {
-            let bucket = eventStore.bucket("wcm");
-            let commits = yield getCommitsToUpdate(bucket);
+            const bucket = eventStore.bucket("wcm");
+            const commits = yield getCommitsToUpdate(bucket);
             yield update(bucket, commits);
         }
         finally {
