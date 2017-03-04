@@ -15,7 +15,7 @@ function stringToBinaryUUID(value: string): MongoDbBinary {
 	return new MongoDbBinary(buffer, MongoDbBinary.SUBTYPE_UUID);
 }
 
-function binaryUUIDToString(value : MongoDbBinary): string {
+function binaryUUIDToString(value: MongoDbBinary): string {
 	// for compatiblity reason check if value is already converted...
 	if (typeof value === "string") {
 		return value;
@@ -33,7 +33,7 @@ function binaryUUIDToString(value : MongoDbBinary): string {
 	return uuid;
 }
 
-function intToLong(value : number){
+function intToLong(value: number) {
 	return MongoDbLong.fromInt(value);
 }
 

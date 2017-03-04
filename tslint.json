@@ -6,12 +6,14 @@
       "tabs"
     ],
     "member-access": false,
-    "ordered-imports": false,
-    "trailing-comma": false,
-    "max-classes-per-file": false,
-    "no-consecutive-blank-lines": false,
+    "ordered-imports": [],
+    "trailing-comma": [],
+    "max-classes-per-file": [],
+    "no-consecutive-blank-lines": [],
     "no-empty": false,
     "object-literal-sort-keys": false,
-    "only-arrow-functions": false
+    "only-arrow-functions": [],
+    "interface-name": [
+    ]
   }
 }
