@@ -4,19 +4,108 @@ import {EventStore} from "./EventStore";
 import {Readable as ReadableStream} from "stream";
 import {Collection as MongoCollection, Cursor as MongoCursor} from "mongodb";
 
-import {CommitsFilters, CommitsOptions, CommitData, ProjectionStreamOptions, MongoDbCommit} from "./nestore-types";
+import {WriteResult, WriteOptions, CommitsFilters, CommitsOptions, CommitData,
+	ProjectionStreamOptions, MongoDbCommit,
+	ConcurrencyError, UndispatchedEventsFoundError} from "./nestore-types";
 import {MongoHelpers} from "./mongoHelpers";
+import * as uuid from "uuid";
 
 const debug = createDebug("nestore.Bucket");
 
 export class Bucket {
 	private collection: MongoCollection;
+	private indexesEnsured = false;
 
 	constructor(
 		readonly eventStore: EventStore,
 		readonly bucketName: string) {
 
 		this.collection =  this.eventStore.mongoCollection(bucketName);
+	}
+
+	randomStreamId(): string {
+		return uuid.v4();
+	}
+
+	async ensureIndexes(): Promise<void> {
+		if (this.indexesEnsured) {
+			return;
+		}
+
+		await this.collection.createIndexes([
+			// BucketRevision is _id (automatically indexed and unique)
+			{
+				key: { Dispatched: 1 }, // TODO Consider creating a partial index to just have one dispatched=false
+				name: "Dispatched"
+			},
+			{
+				key: { StreamId: 1 },
+				name: "StreamId"
+			},
+			{
+				key: { StreamId: 1, StreamRevisionStart: 1 },
+				name: "StreamRevision",
+				unique: true
+			}
+		]);
+
+		this.indexesEnsured = true;
+	}
+
+	async write(
+		streamId: string,
+		expectedStreamRevision: number,
+		events: any[],
+		options?: WriteOptions): Promise<WriteResult> {
+
+		// sanity check
+		if (!streamId) {
+			throw new Error("Invalid stream id");
+		}
+		if (expectedStreamRevision < 0) {
+			throw new Error("Invalid stream revision");
+		}
+		if (events.length === 0) {
+			throw new Error("Invalid stream events");
+		}
+
+		await this.ensureIndexes();
+
+		// stream revision check
+		const lastCommit = await this.lastCommit({ dispatched: -1 });
+		const currentStreamRevision = lastCommit && lastCommit.StreamId === streamId
+			? lastCommit.StreamRevisionEnd
+			: await this.streamRevision(streamId);
+		if (expectedStreamRevision < currentStreamRevision) {
+			throw new ConcurrencyError(`Expected stream revision ${currentStreamRevision}`);
+		}
+		if (expectedStreamRevision > currentStreamRevision) {
+			throw new Error(`Invalid stream revision, expected '${currentStreamRevision}'`);
+		}
+
+		// Check for undispatched
+		if (lastCommit && lastCommit.Dispatched === false) {
+			throw new UndispatchedEventsFoundError(`Undispatched events found for stream ${streamId}`);
+		}
+
+		// var commit = await CreateCommitAsync(streamId, expectedStreamRevision, eventsArray, lastCommit).ConfigureAwait(false);
+
+		// try
+		// {
+		// 	await Collection.InsertOneAsync(commit)
+		// 		.ConfigureAwait(false);
+		// }
+		// catch (MongoWriteException ex)
+		// {
+		// 	if (ex.IsDuplicateKeyException())
+		// 		throw new ConcurrencyWriteException($"Someone else is working on the same bucket ({BucketName}) or stream ({commit.StreamId})", ex);
+		// }
+
+		// var dispatchTask = DispatchCommitAsync(commit);
+
+		// return new WriteResult<T>(commit, dispatchTask);
+
+		return new WriteResult();
 	}
 
 	async getCommitById(id: number): Promise<CommitData | undefined> {
@@ -80,6 +169,15 @@ export class Bucket {
 			);
 
 		return commit;
+	}
+
+	async streamRevision(streamId: string): Promise<number> {
+		const lastCommit = await this.lastCommit({ streamId, dispatched: -1 });
+		if (!lastCommit) {
+			return 0;
+		}
+
+		return lastCommit.StreamRevisionEnd;
 	}
 
 	_getCommitsCursor(filters?: CommitsFilters, options?: CommitsOptions, sort?: any): MongoCursor<MongoDbCommit> {

@@ -36,3 +36,21 @@ export interface MongoDbCommit {
 	Dispatched: boolean;
 	Events: any[];
 }
+
+export class WriteResult {
+}
+
+export class WriteOptions {
+}
+
+export class ConcurrencyError extends Error {
+	constructor(message: string) {
+		super(message);
+	}
+}
+
+export class UndispatchedEventsFoundError extends Error {
+	constructor(message: string) {
+		super(message);
+	}
+}

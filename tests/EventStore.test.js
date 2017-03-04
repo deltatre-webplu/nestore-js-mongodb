@@ -68,7 +68,115 @@ describe("EventStore", function () {
                 chai_1.assert.equal(bucket.bucketName, SAMPLE_BUCKETNAME);
                 chai_1.assert.equal(bucket.eventStore, eventStore);
             });
+            it("should be possible to ensure indexes", function () {
+                return __awaiter(this, void 0, void 0, function* () {
+                    const col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
+                    yield bucket.ensureIndexes();
+                    const indexes = yield col.indexes();
+                    chai_1.assert.equal(indexes[0].name, "_id_");
+                    chai_1.assert.equal(indexes[1].name, "Dispatched");
+                    chai_1.assert.equal(indexes[2].name, "StreamId");
+                    chai_1.assert.equal(indexes[3].name, "StreamRevision");
+                });
+            });
             describe("Write commits", function () {
+                beforeEach(function () {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        yield insertSampleBucket([SAMPLE_EVENT2, SAMPLE_EVENT3, SAMPLE_EVENT1]);
+                    });
+                });
+                afterEach(function () {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        yield clearSampleBucket();
+                    });
+                });
+                it("cannot write a commit with an invalid stream id", function () {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        const invalidStreamIds = [undefined, null, ""];
+                        for (const streamId of invalidStreamIds) {
+                            try {
+                                yield bucket.write(streamId, 0, [""]);
+                            }
+                            catch (err) {
+                                // error expected
+                                chai_1.assert.equal(err.message, "Invalid stream id");
+                                continue;
+                            }
+                            throw new Error(`Expected to fail with stream id '${streamId}'`);
+                        }
+                    });
+                });
+                it("cannot write a commit with an invalid stream revision", function () {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        const streamRevision = -1;
+                        try {
+                            yield bucket.write(bucket.randomStreamId(), streamRevision, [""]);
+                        }
+                        catch (err) {
+                            // error expected
+                            chai_1.assert.equal(err.message, "Invalid stream revision");
+                            return;
+                        }
+                        throw new Error(`Expected to fail with stream revision '${streamRevision}'`);
+                    });
+                });
+                it("cannot write a commit with an invalid events", function () {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        const streamRevision = 0;
+                        try {
+                            yield bucket.write(bucket.randomStreamId(), streamRevision, []);
+                        }
+                        catch (err) {
+                            // error expected
+                            chai_1.assert.equal(err.message, "Invalid stream events");
+                            return;
+                        }
+                        throw new Error(`Expected to fail with empty stream events`);
+                    });
+                });
+                it("cannot write a commit with an old stream revision", function () {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        const streamRevision = 0;
+                        try {
+                            yield bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""]);
+                        }
+                        catch (err) {
+                            // error expected
+                            chai_1.assert.isTrue(err instanceof index_1.ConcurrencyError);
+                            return;
+                        }
+                        throw new Error(`Expected to fail with a concurrency error`);
+                    });
+                });
+                it("cannot write a commit with a stream revision greater than the expected", function () {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        const streamRevision = 4;
+                        try {
+                            yield bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""]);
+                        }
+                        catch (err) {
+                            // error expected
+                            chai_1.assert.equal(err.message, "Invalid stream revision, expected '3'");
+                            return;
+                        }
+                        throw new Error(`Expected to fail`);
+                    });
+                });
+                it("cannot write a commit if there are undispatched events", function () {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        yield insertSampleBucket([SAMPLE_EVENT4_NOT_DISPATCHED]);
+                        const streamRevision = 2;
+                        try {
+                            yield bucket.write(SAMPLE_EVENT4_NOT_DISPATCHED.StreamId, streamRevision, [""]);
+                        }
+                        catch (err) {
+                            // error expected
+                            chai_1.assert.isTrue(err instanceof index_1.UndispatchedEventsFoundError, err.message);
+                            return;
+                        }
+                        throw new Error(`Expected to fail`);
+                    });
+                });
             });
             describe("Read commits", function () {
                 beforeEach(function () {

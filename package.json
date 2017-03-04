@@ -9,7 +9,7 @@
     "src-build-w": "tsc -w",
     "develop": "npm run src-build-w",
     "test": "mocha ./tests/",
-    "mongod" : "mongod --dbpath ./mongo-data --logpath ./mongo-data/mongod.log --nojournal --logRotate reopen --logappend"
+    "mongod": "mongod --dbpath ./mongo-data --logpath ./mongo-data/mongod.log --nojournal --logRotate reopen --logappend"
   },
   "repository": {
     "type": "git",
@@ -22,11 +22,13 @@
   },
   "homepage": "https://github.com/deltatre-webplu/nestore-js-mongodb#readme",
   "dependencies": {
+    "@types/debug": "0.0.29",
+    "@types/mongodb": "^2.1.36",
+    "@types/node": "0.0.2",
+    "@types/uuid": "^2.0.29",
     "debug": "^2.2.0",
     "mongodb": "^2.2.11",
-    "@types/mongodb": "^2.1.36",
-    "@types/debug": "0.0.29",
-    "@types/node": "0.0.2"
+    "uuid": "^3.0.1"
   },
   "devDependencies": {
     "@types/chai": "^3.4.34",

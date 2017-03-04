@@ -1,7 +1,8 @@
 "use strict";
 
 import {assert} from "chai";
-import {EventStore, MongoHelpers, Bucket, CommitData} from "../index";
+import {EventStore, MongoHelpers, Bucket, CommitData,
+	ConcurrencyError, UndispatchedEventsFoundError} from "../index";
 
 const config = require("./config.json"); // tslint:disable-line
 
@@ -71,7 +72,124 @@ describe("EventStore", function() {
 				assert.equal(bucket.eventStore, eventStore);
 			});
 
+			it("should be possible to ensure indexes", async function() {
+				const col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
+
+				await bucket.ensureIndexes();
+
+				const indexes = await col.indexes();
+
+				assert.equal(indexes[0].name, "_id_");
+				assert.equal(indexes[1].name, "Dispatched");
+				assert.equal(indexes[2].name, "StreamId");
+				assert.equal(indexes[3].name, "StreamRevision");
+			});
+
 			describe("Write commits", function(){
+
+				beforeEach(async function() {
+					await insertSampleBucket([SAMPLE_EVENT2, SAMPLE_EVENT3, SAMPLE_EVENT1]);
+				});
+
+				afterEach(async function() {
+					await clearSampleBucket();
+				});
+
+				it("cannot write a commit with an invalid stream id", async function() {
+					const invalidStreamIds = [undefined, null, ""];
+
+					for (const streamId of invalidStreamIds) {
+						try {
+
+							await bucket.write(streamId as any, 0, [""]);
+						} catch (err) {
+							// error expected
+							assert.equal(err.message, "Invalid stream id");
+							continue;
+						}
+
+						throw new Error(`Expected to fail with stream id '${streamId}'`);
+					}
+
+				});
+
+				it("cannot write a commit with an invalid stream revision", async function() {
+					const streamRevision = -1;
+
+					try {
+
+						await bucket.write(bucket.randomStreamId(), streamRevision, [""]);
+					} catch (err) {
+						// error expected
+						assert.equal(err.message, "Invalid stream revision");
+						return;
+					}
+
+					throw new Error(`Expected to fail with stream revision '${streamRevision}'`);
+				});
+
+				it("cannot write a commit with an invalid events", async function() {
+					const streamRevision = 0;
+
+					try {
+
+						await bucket.write(bucket.randomStreamId(), streamRevision, []);
+					} catch (err) {
+						// error expected
+						assert.equal(err.message, "Invalid stream events");
+						return;
+					}
+
+					throw new Error(`Expected to fail with empty stream events`);
+				});
+
+				it("cannot write a commit with an old stream revision", async function() {
+					const streamRevision = 0;
+
+					try {
+
+						await bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""]);
+					} catch (err) {
+						// error expected
+						assert.isTrue(err instanceof ConcurrencyError);
+						return;
+					}
+
+					throw new Error(`Expected to fail with a concurrency error`);
+				});
+
+				it("cannot write a commit with a stream revision greater than the expected", async function() {
+					const streamRevision = 4;
+
+					try {
+
+						await bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""]);
+					} catch (err) {
+						// error expected
+						assert.equal(err.message, "Invalid stream revision, expected '3'");
+						return;
+					}
+
+					throw new Error(`Expected to fail`);
+				});
+
+				it("cannot write a commit if there are undispatched events", async function() {
+
+					await insertSampleBucket([SAMPLE_EVENT4_NOT_DISPATCHED]);
+
+					const streamRevision = 2;
+
+					try {
+
+						await bucket.write(SAMPLE_EVENT4_NOT_DISPATCHED.StreamId, streamRevision, [""]);
+					} catch (err) {
+						// error expected
+						assert.isTrue(err instanceof UndispatchedEventsFoundError, err.message);
+						return;
+					}
+
+					throw new Error(`Expected to fail`);
+				});
 
 			});
 
@@ -383,72 +501,72 @@ function makeId()	{
 	return text;
 }
 
-	const SAMPLE_EVENT1: CommitData = {
-		_id : 1,
-		StreamId : "20000002-2002-2002-2002-200000000002",
-		StreamRevisionStart : 0,
-		StreamRevisionEnd : 1,
-		Dispatched : true,
-		Events : [
-			{
-				_t : "MyEventA",
-				Field1 : "A"
-			}
-		]
-	};
-	const SAMPLE_EVENT2: CommitData = {
-		_id : 2,
-		StreamId : "20000002-2002-2002-2002-200000000002",
-		StreamRevisionStart : 1,
-		StreamRevisionEnd : 3,
-		Dispatched : true,
-		Events : [
-			{
-				"_t" : "MyEventA",
-				"Field1" : "A"
-			},
-			{
-				"_t" : "MyEventB",
-				"Field1" : "B"
-			}
-		]
-	};
-	const SAMPLE_EVENT3: CommitData = {
-		_id : 3,
-		StreamId : "30000003-3003-3003-3003-300000000003",
-		StreamRevisionStart : 0,
-		StreamRevisionEnd : 1,
-		Dispatched : true,
-		Events : [
-			{
-				"_t" : "MyEventX",
-				"Field1" : "X"
-			}
-		]
-	};
-	const SAMPLE_EVENT4: CommitData = {
-		_id : 4,
-		StreamId : "30000003-3003-3003-3003-300000000003",
-		StreamRevisionStart : 1,
-		StreamRevisionEnd : 2,
-		Dispatched : true,
-		Events : [
-			{
-				"_t" : "MyEventX",
-				"Field1" : "Y"
-			}
-		]
-	};
-	const SAMPLE_EVENT4_NOT_DISPATCHED: CommitData = {
-		_id : 4,
-		StreamId : "30000003-3003-3003-3003-300000000003",
-		StreamRevisionStart : 1,
-		StreamRevisionEnd : 2,
-		Dispatched : false,
-		Events : [
-			{
-				"_t" : "MyEventX",
-				"Field1" : "Y"
-			}
-		]
-	};
+const SAMPLE_EVENT1: CommitData = {
+	_id : 1,
+	StreamId : "20000002-2002-2002-2002-200000000002",
+	StreamRevisionStart : 0,
+	StreamRevisionEnd : 1,
+	Dispatched : true,
+	Events : [
+		{
+			_t : "MyEventA",
+			Field1 : "A"
+		}
+	]
+};
+const SAMPLE_EVENT2: CommitData = {
+	_id : 2,
+	StreamId : "20000002-2002-2002-2002-200000000002",
+	StreamRevisionStart : 1,
+	StreamRevisionEnd : 3,
+	Dispatched : true,
+	Events : [
+		{
+			"_t" : "MyEventA",
+			"Field1" : "A"
+		},
+		{
+			"_t" : "MyEventB",
+			"Field1" : "B"
+		}
+	]
+};
+const SAMPLE_EVENT3: CommitData = {
+	_id : 3,
+	StreamId : "30000003-3003-3003-3003-300000000003",
+	StreamRevisionStart : 0,
+	StreamRevisionEnd : 1,
+	Dispatched : true,
+	Events : [
+		{
+			"_t" : "MyEventX",
+			"Field1" : "X"
+		}
+	]
+};
+const SAMPLE_EVENT4: CommitData = {
+	_id : 4,
+	StreamId : "30000003-3003-3003-3003-300000000003",
+	StreamRevisionStart : 1,
+	StreamRevisionEnd : 2,
+	Dispatched : true,
+	Events : [
+		{
+			"_t" : "MyEventX",
+			"Field1" : "Y"
+		}
+	]
+};
+const SAMPLE_EVENT4_NOT_DISPATCHED: CommitData = {
+	_id : 4,
+	StreamId : "30000003-3003-3003-3003-300000000003",
+	StreamRevisionStart : 1,
+	StreamRevisionEnd : 2,
+	Dispatched : false,
+	Events : [
+		{
+			"_t" : "MyEventX",
+			"Field1" : "Y"
+		}
+	]
+};
