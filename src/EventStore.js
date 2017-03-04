@@ -29,15 +29,18 @@ class EventStore {
         });
     }
     bucket(bucketName) {
-        if (!this.db)
+        if (!this.db) {
             throw new Error("Event store not connected");
+        }
         return new Bucket_1.Bucket(this, bucketName);
     }
     mongoCollection(bucketName) {
-        if (!this.db)
+        if (!this.db) {
             throw new Error("Event store not connected");
+        }
         const collectionName = `${bucketName}.commits`;
         return this.db.collection(collectionName);
     }
 }
 exports.EventStore = EventStore;
+//# sourceMappingURL=EventStore.js.map

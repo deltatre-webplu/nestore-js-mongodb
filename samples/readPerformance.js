@@ -49,3 +49,4 @@ function doWork() {
     });
 }
 doWork();
+//# sourceMappingURL=readPerformance.js.map

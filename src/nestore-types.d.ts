@@ -2,7 +2,7 @@ import { Binary as MongoDbBinary } from "mongodb";
 export interface CommitsFilters {
     dispatched?: number;
     eventFilters?: any;
-    streamId?: MongoDbBinary;
+    streamId?: string;
     fromBucketRevision?: number;
     toBucketRevision?: number;
 }
@@ -20,5 +20,13 @@ export interface CommitInfo {
     Dispatched: boolean;
 }
 export interface CommitData extends CommitInfo {
-    Events: Array<any>;
+    Events: any[];
+}
+export interface MongoDbCommit {
+    _id: number;
+    StreamId: MongoDbBinary;
+    StreamRevisionStart: number;
+    StreamRevisionEnd: number;
+    Dispatched: boolean;
+    Events: any[];
 }

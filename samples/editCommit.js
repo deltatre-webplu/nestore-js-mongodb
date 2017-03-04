@@ -56,3 +56,4 @@ function doWork() {
     });
 }
 doWork();
+//# sourceMappingURL=editCommit.js.map

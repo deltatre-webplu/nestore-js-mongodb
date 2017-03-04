@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const createDebug = require("debug");
 const ProjectionStream_1 = require("./ProjectionStream");
+const mongoHelpers_1 = require("./mongoHelpers");
 const debug = createDebug("nestore.Bucket");
 class Bucket {
     constructor(eventStore, bucketName) {
@@ -18,16 +19,25 @@ class Bucket {
         this.collection = this.eventStore.mongoCollection(bucketName);
     }
     getCommitById(id) {
-        return this.collection
-            .findOne({ _id: id });
+        return __awaiter(this, void 0, void 0, function* () {
+            const doc = yield this.collection
+                .findOne({ _id: id });
+            return mongoHelpers_1.MongoHelpers.mongoDocToCommitData(doc);
+        });
     }
     getCommitsStream(filters, options) {
         return this._getCommitsCursor(filters, options)
-            .stream();
+            .stream({
+            transform: mongoHelpers_1.MongoHelpers.mongoDocToCommitData
+        });
     }
     getCommitsArray(filters, options) {
-        return this._getCommitsCursor(filters, options)
-            .toArray();
+        return __awaiter(this, void 0, void 0, function* () {
+            const docs = yield this._getCommitsCursor(filters, options)
+                .toArray();
+            return docs
+                .map((d) => mongoHelpers_1.MongoHelpers.mongoDocToCommitData(d));
+        });
     }
     projectionStream(filters, options) {
         filters = filters || {};
@@ -35,26 +45,29 @@ class Bucket {
         return new ProjectionStream_1.ProjectionStream(this, filters, options);
     }
     lastCommit(filters, options) {
-        return this._getCommitsCursor(filters, options, { _id: -1 })
-            .limit(1)
-            .toArray()
-            .then((data) => {
-            if (data.length)
-                return data[0];
-            return null;
+        return __awaiter(this, void 0, void 0, function* () {
+            const docs = yield this._getCommitsCursor(filters, options, { _id: -1 })
+                .limit(1)
+                .toArray();
+            if (docs.length) {
+                return mongoHelpers_1.MongoHelpers.mongoDocToCommitData(docs[0]);
+            }
+            return undefined;
         });
     }
     updateCommit(id, events) {
         return __awaiter(this, void 0, void 0, function* () {
-            let commit = yield this.getCommitById(id);
-            if (!commit)
+            const commit = yield this.getCommitById(id);
+            if (!commit) {
                 return undefined;
+            }
             if (events) {
-                if (commit.Events.length != events.length)
+                if (commit.Events.length !== events.length) {
                     throw new Error("Events count must be the same");
+                }
                 commit.Events = events;
             }
-            yield this.collection.updateOne({ _id: id }, commit);
+            yield this.collection.updateOne({ _id: id }, { $set: { Events: commit.Events } });
             return commit;
         });
     }
@@ -62,7 +75,7 @@ class Bucket {
         filters = filters || {};
         options = options || {};
         sort = sort || { _id: 1 };
-        let mongoFilters = {};
+        const mongoFilters = {};
         const eFilters = filters.eventFilters;
         if (eFilters) {
             Object.getOwnPropertyNames(eFilters)
@@ -70,23 +83,29 @@ class Bucket {
                 mongoFilters["Events." + name] = eFilters[name];
             });
         }
-        if (!filters.hasOwnProperty("dispatched"))
+        if (!filters.hasOwnProperty("dispatched")) {
             mongoFilters.Dispatched = true;
-        else if (filters.dispatched == 0)
+        }
+        else if (filters.dispatched === 0) {
             mongoFilters.Dispatched = false;
-        else if (filters.dispatched == 1)
+        }
+        else if (filters.dispatched === 1) {
             mongoFilters.Dispatched = true;
-        else if (filters.dispatched == -1) {
+        }
+        else if (filters.dispatched === -1) {
             // returns all
         }
-        if (filters.streamId)
-            mongoFilters.StreamId = filters.streamId;
+        if (filters.streamId) {
+            mongoFilters.StreamId = mongoHelpers_1.MongoHelpers.stringToBinaryUUID(filters.streamId);
+        }
         if (filters.fromBucketRevision || filters.toBucketRevision) {
             mongoFilters._id = {};
-            if (filters.fromBucketRevision)
-                mongoFilters._id["$gte"] = filters.fromBucketRevision;
-            if (filters.toBucketRevision)
-                mongoFilters._id["$lte"] = filters.toBucketRevision;
+            if (filters.fromBucketRevision) {
+                mongoFilters._id.$gte = filters.fromBucketRevision;
+            }
+            if (filters.toBucketRevision) {
+                mongoFilters._id.$lte = filters.toBucketRevision;
+            }
         }
         debug("_getCommitsCursor", mongoFilters);
         let cursor = this.collection
@@ -99,3 +118,4 @@ class Bucket {
     }
 }
 exports.Bucket = Bucket;
+//# sourceMappingURL=Bucket.js.map

@@ -3,7 +3,7 @@
 import {assert} from "chai";
 import {EventStore, MongoHelpers, Bucket, CommitData} from "../index";
 
-const config = require("./config.json");
+const config = require("./config.json"); // tslint:disable-line
 
 describe("EventStore", function() {
 	this.timeout(20000);
@@ -12,34 +12,35 @@ describe("EventStore", function() {
 		let text = "";
 		const possible = "abcdefghijklmnopqrstuvwxyz";
 
-		for( let i=0; i < 5; i++ )
+		for (let i = 0; i < 5; i++ ) {
 			text += possible.charAt(Math.floor(Math.random() * possible.length));
+		}
 
 		return text;
 	}
 
 	const SAMPLE_BUCKETNAME = makeId();
 
-	const SAMPLE_EVENT1 = {
-		"_id" : 1,
-		"StreamId" : MongoHelpers.stringToBinaryUUID("20000002-2002-2002-2002-200000000002"),
-		"StreamRevisionStart" : 0,
-		"StreamRevisionEnd" : 1,
-		"Dispatched" : true,
-		"Events" : [
+	const SAMPLE_EVENT1: CommitData = {
+		_id : 1,
+		StreamId : "20000002-2002-2002-2002-200000000002",
+		StreamRevisionStart : 0,
+		StreamRevisionEnd : 1,
+		Dispatched : true,
+		Events : [
 			{
-				"_t" : "MyEventA",
-				"Field1" : "A"
+				_t : "MyEventA",
+				Field1 : "A"
 			}
 		]
 	};
-	const SAMPLE_EVENT2 = {
-		"_id" : 2,
-		"StreamId" : MongoHelpers.stringToBinaryUUID("20000002-2002-2002-2002-200000000002"),
-		"StreamRevisionStart" : 1,
-		"StreamRevisionEnd" : 3,
-		"Dispatched" : true,
-		"Events" : [
+	const SAMPLE_EVENT2: CommitData = {
+		_id : 2,
+		StreamId : "20000002-2002-2002-2002-200000000002",
+		StreamRevisionStart : 1,
+		StreamRevisionEnd : 3,
+		Dispatched : true,
+		Events : [
 			{
 				"_t" : "MyEventA",
 				"Field1" : "A"
@@ -50,39 +51,39 @@ describe("EventStore", function() {
 			}
 		]
 	};
-	const SAMPLE_EVENT3 = {
-		"_id" : 3,
-		"StreamId" : MongoHelpers.stringToBinaryUUID("30000003-3003-3003-3003-300000000003"),
-		"StreamRevisionStart" : 0,
-		"StreamRevisionEnd" : 1,
-		"Dispatched" : true,
-		"Events" : [
+	const SAMPLE_EVENT3: CommitData = {
+		_id : 3,
+		StreamId : "30000003-3003-3003-3003-300000000003",
+		StreamRevisionStart : 0,
+		StreamRevisionEnd : 1,
+		Dispatched : true,
+		Events : [
 			{
 				"_t" : "MyEventX",
 				"Field1" : "X"
 			}
 		]
 	};
-	const SAMPLE_EVENT4 = {
-		"_id" : 4,
-		"StreamId" : MongoHelpers.stringToBinaryUUID("30000003-3003-3003-3003-300000000003"),
-		"StreamRevisionStart" : 1,
-		"StreamRevisionEnd" : 2,
-		"Dispatched" : true,
-		"Events" : [
+	const SAMPLE_EVENT4: CommitData = {
+		_id : 4,
+		StreamId : "30000003-3003-3003-3003-300000000003",
+		StreamRevisionStart : 1,
+		StreamRevisionEnd : 2,
+		Dispatched : true,
+		Events : [
 			{
 				"_t" : "MyEventX",
 				"Field1" : "Y"
 			}
 		]
 	};
-	const SAMPLE_EVENT4_NOT_DISPATCHED = {
-		"_id" : 4,
-		"StreamId" : MongoHelpers.stringToBinaryUUID("30000003-3003-3003-3003-300000000003"),
-		"StreamRevisionStart" : 1,
-		"StreamRevisionEnd" : 2,
-		"Dispatched" : false,
-		"Events" : [
+	const SAMPLE_EVENT4_NOT_DISPATCHED: CommitData = {
+		_id : 4,
+		StreamId : "30000003-3003-3003-3003-300000000003",
+		StreamRevisionStart : 1,
+		StreamRevisionEnd : 2,
+		Dispatched : false,
+		Events : [
 			{
 				"_t" : "MyEventX",
 				"Field1" : "Y"
@@ -97,15 +98,22 @@ describe("EventStore", function() {
 	});
 
 	describe("When connected", function(){
-		let eventStore : EventStore;
+		let eventStore: EventStore;
 
-		function insertSampleBucket(docs : Object[]){
-			let col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
-			return col.insertMany(docs);
+		function insertSampleBucket(docs: CommitData[]) {
+			const col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
+
+			const mongoDbDocs = docs.map((d) => {
+				const newDoc = Object.assign({}, d) as any;
+				newDoc.StreamId = MongoHelpers.stringToBinaryUUID(newDoc.StreamId);
+				return newDoc;
+			});
+
+			return col.insertMany(mongoDbDocs);
 		}
 
-		function clearSampleBucket(){
-			let col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
+		function clearSampleBucket() {
+			const col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
 			return col.drop();
 		}
 
@@ -116,8 +124,9 @@ describe("EventStore", function() {
 		});
 
 		afterEach(function(){
-			if (!eventStore || !eventStore.db)
+			if (!eventStore || !eventStore.db) {
 				return;
+			}
 
 			return clearSampleBucket()
 			.then(() => {
@@ -130,7 +139,7 @@ describe("EventStore", function() {
 		});
 
 		describe("Giving a bucket", function(){
-			let bucket : Bucket;
+			let bucket: Bucket;
 
 			beforeEach(function() {
 				bucket = eventStore.bucket(SAMPLE_BUCKETNAME);
@@ -143,11 +152,11 @@ describe("EventStore", function() {
 			});
 
 			it("should be possible to read commits as stream", function() {
-				let stream = bucket.getCommitsStream({});
-				let docs = new Array<CommitData>();
+				const stream = bucket.getCommitsStream({});
+				const docs = new Array<CommitData>();
 				return new Promise((resolve) => {
 					stream
-					.on("data", (doc : CommitData) => {
+					.on("data", (doc: CommitData) => {
 						docs.push(doc);
 					})
 					.on("end", () => {
@@ -164,14 +173,14 @@ describe("EventStore", function() {
 			});
 
 			it("should be possible to create a projection stream", function() {
-				let projection = bucket.projectionStream();
-				let docs = new Array<CommitData>();
+				const projection = bucket.projectionStream();
+				const docs = new Array<CommitData>();
 
 				return new Promise((resolve, reject) => {
 					projection
-					.on("data", (doc : CommitData) => {
+					.on("data", (doc: CommitData) => {
 						docs.push(doc);
-						if (doc._id == 3){ // when last event is read close the projection
+						if (doc._id === 3) { // when last event is read close the projection
 							projection.close();
 						}
 					})
@@ -196,15 +205,15 @@ describe("EventStore", function() {
 			});
 
 			it("should be possible to create a projection stream and wait for new events", function() {
-				let projection = bucket.projectionStream({}, {waitInterval : 100});
-				let docs = new Array<CommitData>();
+				const projection = bucket.projectionStream({}, {waitInterval : 100});
+				const docs = new Array<CommitData>();
 				let waitCalls = 0;
 
 				return new Promise((resolve, reject) => {
 					projection
-					.on("data", (doc : CommitData) => {
+					.on("data", (doc: CommitData) => {
 						docs.push(doc);
-						if (doc._id == 4){ // when last event is read close the projection
+						if (doc._id === 4) { // when last event is read close the projection
 							projection.close();
 						}
 					})
@@ -234,16 +243,16 @@ describe("EventStore", function() {
 				});
 			});
 
-			it("should be possible to create a projection stream and when wait for new events start from the last one", function() {
-				let projection = bucket.projectionStream({ eventFilters: { Field1: "Y" } }, {waitInterval : 100});
-				let docs = new Array<CommitData>();
+			it("create a projection stream and when wait for new events start from the last one", function() {
+				const projection = bucket.projectionStream({ eventFilters: { Field1: "Y" } }, {waitInterval : 100});
+				const docs = new Array<CommitData>();
 				let waitCalls = 0;
 
 				return new Promise((resolve, reject) => {
 					projection
-					.on("data", (doc : CommitData) => {
+					.on("data", (doc: CommitData) => {
 						docs.push(doc);
-						if (doc._id == 4){ // when last event is read close the projection
+						if (doc._id === 4) { // when last event is read close the projection
 							projection.close();
 						}
 					})
@@ -271,9 +280,9 @@ describe("EventStore", function() {
 			});
 
 			it("should be possible to create a projection and close it multiple times", function() {
-				let projection = bucket.projectionStream({}, {waitInterval : 100});
+				const projection = bucket.projectionStream({}, {waitInterval : 100});
 
-				let projectionChecks = new Promise((resolve, reject) => {
+				const projectionChecks = new Promise((resolve, reject) => {
 					projection
 					.on("error", (err) => {
 						projection.close();
@@ -361,18 +370,30 @@ describe("EventStore", function() {
 			});
 
 			it("should be possible to read commits filtering by stream id", function() {
-				return bucket.getCommitsArray({streamId: MongoHelpers.stringToBinaryUUID("30000003-3003-3003-3003-300000000003") })
+				return bucket.getCommitsArray({streamId: "30000003-3003-3003-3003-300000000003" })
 				.then((docs) => {
 					assert.equal(docs.length, 1);
 					assert.deepEqual(docs[0], SAMPLE_EVENT3);
 				});
 			});
 
+			it("should be possible to get a commit by id", async function() {
+				const doc = await bucket.getCommitById(SAMPLE_EVENT1._id);
+
+				if (!doc) {
+					throw new Error("Commit not found");
+				}
+
+				assert.equal(typeof doc._id, "number");
+				assert.equal(typeof doc.StreamId, "string");
+				assert.isTrue(doc.Events instanceof Array);
+			});
+
 			it("should not be possible to update commit events with a different events number", async function() {
-				let doc = await bucket.getCommitById(SAMPLE_EVENT1._id);
+				const doc = await bucket.getCommitById(SAMPLE_EVENT1._id);
 
 				// Clone events
-				let newEvents = [
+				const newEvents = [
 					...SAMPLE_EVENT1.Events,
 					...SAMPLE_EVENT2.Events,
 				];
@@ -381,8 +402,7 @@ describe("EventStore", function() {
 					await bucket.updateCommit(SAMPLE_EVENT1._id, newEvents);
 
 					assert.fail("Should throw an error");
-				}
-				catch (err) {
+				} catch (err) {
 					assert.equal("Events count must be the same", err.message);
 				}
 			});
@@ -392,7 +412,7 @@ describe("EventStore", function() {
 				assert.deepEqual(doc, SAMPLE_EVENT1);
 
 				// Clone events
-				let newEvents = Array.from(SAMPLE_EVENT1.Events);
+				const newEvents = Array.from(SAMPLE_EVENT1.Events);
 				newEvents[0] = Object.assign({}, newEvents[0]);
 				newEvents[0].Field1 = "A modified";
 
@@ -400,6 +420,10 @@ describe("EventStore", function() {
 				await bucket.updateCommit(SAMPLE_EVENT1._id, newEvents);
 
 				doc = await bucket.getCommitById(SAMPLE_EVENT1._id);
+				if (!doc) {
+					throw new Error("Commit not found");
+				}
+
 				assert.notDeepEqual(doc, SAMPLE_EVENT1);
 				assert.equal(doc.Events[0].Field1, "A modified");
 				// if I restore the old value then all other properties should be the same

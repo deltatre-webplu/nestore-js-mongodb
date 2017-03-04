@@ -1,29 +1,38 @@
 import {Binary as MongoDbBinary} from "mongodb";
 
 export interface CommitsFilters {
-	dispatched? : number;
-	eventFilters? : any;
-	streamId? : MongoDbBinary;
-	fromBucketRevision? : number;
-	toBucketRevision? : number;
+	dispatched?: number;
+	eventFilters?: any;
+	streamId?: string;
+	fromBucketRevision?: number;
+	toBucketRevision?: number;
 }
 
 export interface CommitsOptions {
-	batchSize? : number;
+	batchSize?: number;
 }
 
 export interface ProjectionStreamOptions extends CommitsOptions {
-  waitInterval? : number;
+	waitInterval?: number;
 }
 
 export interface CommitInfo {
-	_id : number; // BucketRevision
-	StreamId : string;
-	StreamRevisionStart : number;
-	StreamRevisionEnd : number;
-	Dispatched : boolean;
+	_id: number; // BucketRevision
+	StreamId: string;
+	StreamRevisionStart: number;
+	StreamRevisionEnd: number;
+	Dispatched: boolean;
 }
 
 export interface CommitData extends CommitInfo {
-	Events : Array<any>;
+	Events: any[];
+}
+
+export interface MongoDbCommit {
+	_id: number; // BucketRevision
+	StreamId: MongoDbBinary;
+	StreamRevisionStart: number;
+	StreamRevisionEnd: number;
+	Dispatched: boolean;
+	Events: any[];
 }

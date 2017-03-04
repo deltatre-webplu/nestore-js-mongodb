@@ -12,6 +12,7 @@
         "noFallthroughCasesInSwitch": true,
     
         "declaration": true,
+        "sourceMap": true,
         
         "types":["mocha"]
     },

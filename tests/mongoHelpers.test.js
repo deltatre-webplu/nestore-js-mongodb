@@ -12,4 +12,17 @@ describe("mongoHelpers", function() {
 
 		assert.equal(stringCsuuid.toUpperCase(), "D915352B-B6F3-48C5-ACA7-C842FABA0486");
 	});
+
+	// For compatiblity with older nestore versions.... <= 1.4
+	it("calling conversion on already converted value as no effect", function() {
+		let uuid = helpers.stringToBinaryUUID("D915352B-B6F3-48C5-ACA7-C842FABA0486");
+		let uuid2 = helpers.stringToBinaryUUID(uuid);
+
+		let stringCsuuid = helpers.binaryUUIDToString(uuid2);
+
+		let stringCsuuid2 = helpers.binaryUUIDToString(stringCsuuid);
+		assert.equal(stringCsuuid2, stringCsuuid);
+
+		assert.equal(stringCsuuid2.toUpperCase(), "D915352B-B6F3-48C5-ACA7-C842FABA0486");
+	});
 });

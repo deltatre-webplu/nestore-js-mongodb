@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const createDebug = require("debug");
 const stream_1 = require("stream");
+const mongoHelpers_1 = require("./mongoHelpers");
 const debug = createDebug("nestore.ProjectionStream");
 const debugSource = createDebug("nestore.ProjectionStream.source");
 class ProjectionStream extends stream_1.Readable {
@@ -18,8 +19,9 @@ class ProjectionStream extends stream_1.Readable {
         debug("close");
         this.closed = true;
         this._stopTimer();
-        if (this.source)
+        if (this.source) {
             return this.source.close();
+        }
         // force a close event and exit
         this.emit("close");
         return Promise.resolve();
@@ -30,9 +32,10 @@ class ProjectionStream extends stream_1.Readable {
     resume() {
         debug("resume");
         super.resume();
-        if (this.source)
+        if (this.source) {
             this.source.resume();
-        return this; // TODO how can I return base instance?
+        }
+        return this;
     }
     on(event, listener) {
         return super.on(event, listener);
@@ -40,20 +43,23 @@ class ProjectionStream extends stream_1.Readable {
     pause() {
         debug("pause");
         super.pause();
-        if (this.source)
+        if (this.source) {
             this.source.pause();
-        return this; // TODO how can I return base instance?
+        }
+        return this;
     }
     // virtual method called by base class each time it needs more data
     _read() {
         debug("_read");
-        if (!this.timeoutObj && !this.isClosed())
+        if (!this.timeoutObj && !this.isClosed()) {
             this._startTimer(1);
+        }
     }
     _startTimer(interval) {
         debug("_startTimer");
-        if (this.isClosed())
+        if (this.isClosed()) {
             return;
+        }
         this._stopTimer();
         this.timeoutObj = setTimeout(() => this._loadNextStream(), interval || this.options.waitInterval);
     }
@@ -71,14 +77,17 @@ class ProjectionStream extends stream_1.Readable {
         this.bucket.lastCommit({}, this.options)
             .then((lastCommit) => {
             let lastBucketRevision = lastCommit ? lastCommit._id : 0;
-            let sourceCursor = this.bucket._getCommitsCursor(this.filters, this.options);
+            const sourceCursor = this.bucket._getCommitsCursor(this.filters, this.options);
             this.source = sourceCursor;
             sourceCursor
                 .on("data", (doc) => {
-                if (doc._id > lastBucketRevision)
+                if (doc._id > lastBucketRevision) {
                     lastBucketRevision = doc._id;
-                if (!this.push(doc))
+                }
+                const commit = mongoHelpers_1.MongoHelpers.mongoDocToCommitData(doc);
+                if (!this.push(commit)) {
                     sourceCursor.close();
+                }
             })
                 .on("error", (err) => {
                 debugSource("Error");
@@ -106,3 +115,4 @@ class ProjectionStream extends stream_1.Readable {
     }
 }
 exports.ProjectionStream = ProjectionStream;
+//# sourceMappingURL=ProjectionStream.js.map

@@ -7,3 +7,4 @@ __export(require("./src/EventStore"));
 __export(require("./src/Bucket"));
 __export(require("./src/ProjectionStream"));
 __export(require("./src/mongoHelpers"));
+//# sourceMappingURL=index.js.map
