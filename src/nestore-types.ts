@@ -37,10 +37,12 @@ export interface MongoDbCommit {
 	Events: any[];
 }
 
-export class WriteResult {
+export interface WriteResult {
+	commit: CommitData;
 }
 
-export class WriteOptions {
+export interface WriteOptions {
+	dispatched?: boolean;
 }
 
 export class ConcurrencyError extends Error {

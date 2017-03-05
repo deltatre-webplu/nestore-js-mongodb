@@ -55,11 +55,15 @@ function commitDataToMongoDoc(commit) {
         StreamRevisionStart: commit.StreamRevisionStart
     };
 }
+function isDuplicateError(err) {
+    return err.code === 11000;
+}
 exports.MongoHelpers = {
     stringToBinaryUUID,
     binaryUUIDToString,
     intToLong,
     mongoDocToCommitData,
-    commitDataToMongoDoc
+    commitDataToMongoDoc,
+    isDuplicateError
 };
 //# sourceMappingURL=mongoHelpers.js.map

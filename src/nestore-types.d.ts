@@ -30,9 +30,11 @@ export interface MongoDbCommit {
     Dispatched: boolean;
     Events: any[];
 }
-export declare class WriteResult {
+export interface WriteResult {
+    commit: CommitData;
 }
-export declare class WriteOptions {
+export interface WriteOptions {
+    dispatched?: boolean;
 }
 export declare class ConcurrencyError extends Error {
     constructor(message: string);

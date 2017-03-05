@@ -10,10 +10,7 @@ describe("EventStore", function() {
 	this.slow(500);
 	this.timeout(20000);
 
-	let SAMPLE_BUCKETNAME: string;
-
 	before(function() {
-		SAMPLE_BUCKETNAME = makeId();
 	});
 
 	after(function() {
@@ -21,23 +18,6 @@ describe("EventStore", function() {
 
 	describe("When connected", function(){
 		let eventStore: EventStore;
-
-		function insertSampleBucket(docs: CommitData[]) {
-			const col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
-
-			const mongoDbDocs = docs.map((d) => {
-				const newDoc = Object.assign({}, d) as any;
-				newDoc.StreamId = MongoHelpers.stringToBinaryUUID(newDoc.StreamId);
-				return newDoc;
-			});
-
-			return col.insertMany(mongoDbDocs);
-		}
-
-		function clearSampleBucket() {
-			const col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
-			return col.drop();
-		}
 
 		beforeEach(async function() {
 			eventStore = new EventStore(config);
@@ -58,12 +38,43 @@ describe("EventStore", function() {
 
 		describe("Giving a bucket", function(){
 			let bucket: Bucket;
+			let SAMPLE_BUCKETNAME: string;
+
+			function insertSampleBucket(docs: CommitData[]) {
+				const col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
+
+				const mongoDbDocs = docs.map((d) => {
+					const newDoc = Object.assign({}, d) as any;
+					newDoc.StreamId = MongoHelpers.stringToBinaryUUID(newDoc.StreamId);
+					return newDoc;
+				});
+
+				return col.insertMany(mongoDbDocs);
+			}
+
+			async function clearSampleBucket() {
+				if (!eventStore || !eventStore.db || !SAMPLE_BUCKETNAME) {
+					return;
+				}
+				const col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
+				try {
+					await col.drop();
+				} catch (err) {
+					// ignore if not found...
+				}
+
+				const colCounters = eventStore.db.collection("counters");
+
+				await colCounters.deleteOne({ _id: SAMPLE_BUCKETNAME });
+			}
 
 			beforeEach(async function() {
+				SAMPLE_BUCKETNAME = makeId();
 				bucket = eventStore.bucket(SAMPLE_BUCKETNAME);
 			});
 
 			afterEach(async function() {
+				await clearSampleBucket();
 			});
 
 			it("should be possible to get a bucket instance", function() {
@@ -85,23 +96,43 @@ describe("EventStore", function() {
 				assert.equal(indexes[3].name, "StreamRevision");
 			});
 
+			describe("Auto Increment strategy using counters", function() {
+
+				it("can increment counters", async function() {
+					let revision = await eventStore.autoIncrementStrategy.increment(SAMPLE_BUCKETNAME);
+					assert.equal(revision, 1);
+					revision = await eventStore.autoIncrementStrategy.increment(SAMPLE_BUCKETNAME);
+					assert.equal(revision, 2);
+					revision = await eventStore.autoIncrementStrategy.increment(SAMPLE_BUCKETNAME);
+					assert.equal(revision, 3);
+				});
+
+				it("can increment counters starting from last commit", async function() {
+					const lastCommit: CommitData = {
+						_id: 263,
+						Dispatched: true,
+						Events: ["e1"],
+						StreamId: bucket.randomStreamId(),
+						StreamRevisionStart: 1,
+						StreamRevisionEnd: 2
+					};
+					let revision = await eventStore.autoIncrementStrategy.increment(SAMPLE_BUCKETNAME, lastCommit);
+					assert.equal(revision, 264);
+					revision = await eventStore.autoIncrementStrategy.increment(SAMPLE_BUCKETNAME);
+					assert.equal(revision, 265);
+					revision = await eventStore.autoIncrementStrategy.increment(SAMPLE_BUCKETNAME);
+					assert.equal(revision, 266);
+				});
+			});
+
 			describe("Write commits", function(){
-
-				beforeEach(async function() {
-					await insertSampleBucket([SAMPLE_EVENT2, SAMPLE_EVENT3, SAMPLE_EVENT1]);
-				});
-
-				afterEach(async function() {
-					await clearSampleBucket();
-				});
 
 				it("cannot write a commit with an invalid stream id", async function() {
 					const invalidStreamIds = [undefined, null, ""];
 
 					for (const streamId of invalidStreamIds) {
 						try {
-
-							await bucket.write(streamId as any, 0, [""]);
+							await bucket.write(streamId as any, 0, [""], { dispatched: true });
 						} catch (err) {
 							// error expected
 							assert.equal(err.message, "Invalid stream id");
@@ -117,8 +148,7 @@ describe("EventStore", function() {
 					const streamRevision = -1;
 
 					try {
-
-						await bucket.write(bucket.randomStreamId(), streamRevision, [""]);
+						await bucket.write(bucket.randomStreamId(), streamRevision, [""], { dispatched: true });
 					} catch (err) {
 						// error expected
 						assert.equal(err.message, "Invalid stream revision");
@@ -132,8 +162,7 @@ describe("EventStore", function() {
 					const streamRevision = 0;
 
 					try {
-
-						await bucket.write(bucket.randomStreamId(), streamRevision, []);
+						await bucket.write(bucket.randomStreamId(), streamRevision, [], { dispatched: true });
 					} catch (err) {
 						// error expected
 						assert.equal(err.message, "Invalid stream events");
@@ -143,52 +172,114 @@ describe("EventStore", function() {
 					throw new Error(`Expected to fail with empty stream events`);
 				});
 
-				it("cannot write a commit with an old stream revision", async function() {
-					const streamRevision = 0;
+				describe("Write commits with existing data", function() {
+					beforeEach(async function() {
+						await insertSampleBucket([SAMPLE_EVENT2, SAMPLE_EVENT3, SAMPLE_EVENT1]);
+					});
 
-					try {
+					it("cannot write a commit with an old stream revision", async function() {
+						const streamRevision = 0;
 
-						await bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""]);
-					} catch (err) {
-						// error expected
-						assert.isTrue(err instanceof ConcurrencyError);
-						return;
-					}
+						try {
 
-					throw new Error(`Expected to fail with a concurrency error`);
+							await bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""], { dispatched: true });
+						} catch (err) {
+							// error expected
+							assert.isTrue(err instanceof ConcurrencyError);
+							return;
+						}
+
+						throw new Error(`Expected to fail with a concurrency error`);
+					});
+
+					it("cannot write a commit with a stream revision greater than the expected", async function() {
+						const streamRevision = 4;
+
+						try {
+							await bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""], { dispatched: true });
+						} catch (err) {
+							// error expected
+							assert.equal(err.message, "Invalid stream revision, expected '3'");
+							return;
+						}
+
+						throw new Error(`Expected to fail`);
+					});
+
+					it("cannot write a commit if there are undispatched events", async function() {
+
+						await insertSampleBucket([SAMPLE_EVENT4_NOT_DISPATCHED]);
+
+						const streamRevision = 2;
+
+						try {
+							await bucket.write(SAMPLE_EVENT4_NOT_DISPATCHED.StreamId, streamRevision, [""], { dispatched: true });
+						} catch (err) {
+							// error expected
+							assert.isTrue(err instanceof UndispatchedEventsFoundError, err.message);
+							return;
+						}
+
+						throw new Error(`Expected to fail`);
+					});
+
 				});
 
-				it("cannot write a commit with a stream revision greater than the expected", async function() {
-					const streamRevision = 4;
+				it("write an event", async function() {
+					const streamId = bucket.randomStreamId();
+					await bucket.write(streamId, 0, ["e1"], { dispatched: true });
 
-					try {
+					const commits = await bucket.getCommitsArray({ streamId });
 
-						await bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""]);
-					} catch (err) {
-						// error expected
-						assert.equal(err.message, "Invalid stream revision, expected '3'");
-						return;
-					}
-
-					throw new Error(`Expected to fail`);
+					assert.equal(commits.length, 1);
+					assert.equal(commits[0]._id, 1);
+					assert.equal(commits[0].Dispatched, true);
+					assert.equal(commits[0].Events[0], "e1");
+					assert.equal(commits[0].StreamId, streamId);
+					assert.equal(commits[0].StreamRevisionStart, 0);
+					assert.equal(commits[0].StreamRevisionEnd, 1);
 				});
 
-				it("cannot write a commit if there are undispatched events", async function() {
+				it("write multiple events", async function() {
+					const streamId = bucket.randomStreamId();
+					await bucket.write(streamId, 0, ["e1", "e2"], { dispatched: true });
 
-					await insertSampleBucket([SAMPLE_EVENT4_NOT_DISPATCHED]);
+					const commits = await bucket.getCommitsArray({ streamId });
 
-					const streamRevision = 2;
+					assert.equal(commits.length, 1);
+					assert.equal(commits[0]._id, 1);
+					assert.equal(commits[0].Dispatched, true);
+					assert.equal(commits[0].Events[0], "e1");
+					assert.equal(commits[0].Events[1], "e2");
+					assert.equal(commits[0].StreamId, streamId);
+					assert.equal(commits[0].StreamRevisionStart, 0);
+					assert.equal(commits[0].StreamRevisionEnd, 2);
+				});
 
-					try {
+				it("write multiple commits", async function() {
+					const streamId = bucket.randomStreamId();
 
-						await bucket.write(SAMPLE_EVENT4_NOT_DISPATCHED.StreamId, streamRevision, [""]);
-					} catch (err) {
-						// error expected
-						assert.isTrue(err instanceof UndispatchedEventsFoundError, err.message);
-						return;
-					}
+					await bucket.write(streamId, 0, ["e1", "e2"], { dispatched: true });
+					await bucket.write(streamId, 2, ["e3", "e4"], { dispatched: true });
 
-					throw new Error(`Expected to fail`);
+					const commits = await bucket.getCommitsArray({ streamId });
+
+					assert.equal(commits.length, 2);
+					assert.equal(commits[0]._id, 1);
+					assert.equal(commits[0].Dispatched, true);
+					assert.equal(commits[0].Events[0], "e1");
+					assert.equal(commits[0].Events[1], "e2");
+					assert.equal(commits[0].StreamId, streamId);
+					assert.equal(commits[0].StreamRevisionStart, 0);
+					assert.equal(commits[0].StreamRevisionEnd, 2);
+
+					assert.equal(commits[1]._id, 2);
+					assert.equal(commits[1].Dispatched, true);
+					assert.equal(commits[1].Events[0], "e3");
+					assert.equal(commits[1].Events[1], "e4");
+					assert.equal(commits[1].StreamId, streamId);
+					assert.equal(commits[1].StreamRevisionStart, 2);
+					assert.equal(commits[1].StreamRevisionEnd, 4);
 				});
 
 			});
@@ -197,10 +288,6 @@ describe("EventStore", function() {
 
 				beforeEach(async function() {
 					await insertSampleBucket([SAMPLE_EVENT2, SAMPLE_EVENT3, SAMPLE_EVENT1]);
-				});
-
-				afterEach(async function() {
-					await clearSampleBucket();
 				});
 
 				it("should be possible to read commits as stream", function() {

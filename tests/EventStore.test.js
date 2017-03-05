@@ -14,27 +14,12 @@ const config = require("./config.json"); // tslint:disable-line
 describe("EventStore", function () {
     this.slow(500);
     this.timeout(20000);
-    let SAMPLE_BUCKETNAME;
     before(function () {
-        SAMPLE_BUCKETNAME = makeId();
     });
     after(function () {
     });
     describe("When connected", function () {
         let eventStore;
-        function insertSampleBucket(docs) {
-            const col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
-            const mongoDbDocs = docs.map((d) => {
-                const newDoc = Object.assign({}, d);
-                newDoc.StreamId = index_1.MongoHelpers.stringToBinaryUUID(newDoc.StreamId);
-                return newDoc;
-            });
-            return col.insertMany(mongoDbDocs);
-        }
-        function clearSampleBucket() {
-            const col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
-            return col.drop();
-        }
         beforeEach(function () {
             return __awaiter(this, void 0, void 0, function* () {
                 eventStore = new index_1.EventStore(config);
@@ -54,13 +39,41 @@ describe("EventStore", function () {
         });
         describe("Giving a bucket", function () {
             let bucket;
+            let SAMPLE_BUCKETNAME;
+            function insertSampleBucket(docs) {
+                const col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
+                const mongoDbDocs = docs.map((d) => {
+                    const newDoc = Object.assign({}, d);
+                    newDoc.StreamId = index_1.MongoHelpers.stringToBinaryUUID(newDoc.StreamId);
+                    return newDoc;
+                });
+                return col.insertMany(mongoDbDocs);
+            }
+            function clearSampleBucket() {
+                return __awaiter(this, void 0, void 0, function* () {
+                    if (!eventStore || !eventStore.db || !SAMPLE_BUCKETNAME) {
+                        return;
+                    }
+                    const col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
+                    try {
+                        yield col.drop();
+                    }
+                    catch (err) {
+                        // ignore if not found...
+                    }
+                    const colCounters = eventStore.db.collection("counters");
+                    yield colCounters.deleteOne({ _id: SAMPLE_BUCKETNAME });
+                });
+            }
             beforeEach(function () {
                 return __awaiter(this, void 0, void 0, function* () {
+                    SAMPLE_BUCKETNAME = makeId();
                     bucket = eventStore.bucket(SAMPLE_BUCKETNAME);
                 });
             });
             afterEach(function () {
                 return __awaiter(this, void 0, void 0, function* () {
+                    yield clearSampleBucket();
                 });
             });
             it("should be possible to get a bucket instance", function () {
@@ -79,23 +92,43 @@ describe("EventStore", function () {
                     chai_1.assert.equal(indexes[3].name, "StreamRevision");
                 });
             });
+            describe("Auto Increment strategy using counters", function () {
+                it("can increment counters", function () {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        let revision = yield eventStore.autoIncrementStrategy.increment(SAMPLE_BUCKETNAME);
+                        chai_1.assert.equal(revision, 1);
+                        revision = yield eventStore.autoIncrementStrategy.increment(SAMPLE_BUCKETNAME);
+                        chai_1.assert.equal(revision, 2);
+                        revision = yield eventStore.autoIncrementStrategy.increment(SAMPLE_BUCKETNAME);
+                        chai_1.assert.equal(revision, 3);
+                    });
+                });
+                it("can increment counters starting from last commit", function () {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        const lastCommit = {
+                            _id: 263,
+                            Dispatched: true,
+                            Events: ["e1"],
+                            StreamId: bucket.randomStreamId(),
+                            StreamRevisionStart: 1,
+                            StreamRevisionEnd: 2
+                        };
+                        let revision = yield eventStore.autoIncrementStrategy.increment(SAMPLE_BUCKETNAME, lastCommit);
+                        chai_1.assert.equal(revision, 264);
+                        revision = yield eventStore.autoIncrementStrategy.increment(SAMPLE_BUCKETNAME);
+                        chai_1.assert.equal(revision, 265);
+                        revision = yield eventStore.autoIncrementStrategy.increment(SAMPLE_BUCKETNAME);
+                        chai_1.assert.equal(revision, 266);
+                    });
+                });
+            });
             describe("Write commits", function () {
-                beforeEach(function () {
-                    return __awaiter(this, void 0, void 0, function* () {
-                        yield insertSampleBucket([SAMPLE_EVENT2, SAMPLE_EVENT3, SAMPLE_EVENT1]);
-                    });
-                });
-                afterEach(function () {
-                    return __awaiter(this, void 0, void 0, function* () {
-                        yield clearSampleBucket();
-                    });
-                });
                 it("cannot write a commit with an invalid stream id", function () {
                     return __awaiter(this, void 0, void 0, function* () {
                         const invalidStreamIds = [undefined, null, ""];
                         for (const streamId of invalidStreamIds) {
                             try {
-                                yield bucket.write(streamId, 0, [""]);
+                                yield bucket.write(streamId, 0, [""], { dispatched: true });
                             }
                             catch (err) {
                                 // error expected
@@ -110,7 +143,7 @@ describe("EventStore", function () {
                     return __awaiter(this, void 0, void 0, function* () {
                         const streamRevision = -1;
                         try {
-                            yield bucket.write(bucket.randomStreamId(), streamRevision, [""]);
+                            yield bucket.write(bucket.randomStreamId(), streamRevision, [""], { dispatched: true });
                         }
                         catch (err) {
                             // error expected
@@ -124,7 +157,7 @@ describe("EventStore", function () {
                     return __awaiter(this, void 0, void 0, function* () {
                         const streamRevision = 0;
                         try {
-                            yield bucket.write(bucket.randomStreamId(), streamRevision, []);
+                            yield bucket.write(bucket.randomStreamId(), streamRevision, [], { dispatched: true });
                         }
                         catch (err) {
                             // error expected
@@ -134,47 +167,106 @@ describe("EventStore", function () {
                         throw new Error(`Expected to fail with empty stream events`);
                     });
                 });
-                it("cannot write a commit with an old stream revision", function () {
-                    return __awaiter(this, void 0, void 0, function* () {
-                        const streamRevision = 0;
-                        try {
-                            yield bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""]);
-                        }
-                        catch (err) {
-                            // error expected
-                            chai_1.assert.isTrue(err instanceof index_1.ConcurrencyError);
-                            return;
-                        }
-                        throw new Error(`Expected to fail with a concurrency error`);
+                describe("Write commits with existing data", function () {
+                    beforeEach(function () {
+                        return __awaiter(this, void 0, void 0, function* () {
+                            yield insertSampleBucket([SAMPLE_EVENT2, SAMPLE_EVENT3, SAMPLE_EVENT1]);
+                        });
+                    });
+                    it("cannot write a commit with an old stream revision", function () {
+                        return __awaiter(this, void 0, void 0, function* () {
+                            const streamRevision = 0;
+                            try {
+                                yield bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""], { dispatched: true });
+                            }
+                            catch (err) {
+                                // error expected
+                                chai_1.assert.isTrue(err instanceof index_1.ConcurrencyError);
+                                return;
+                            }
+                            throw new Error(`Expected to fail with a concurrency error`);
+                        });
+                    });
+                    it("cannot write a commit with a stream revision greater than the expected", function () {
+                        return __awaiter(this, void 0, void 0, function* () {
+                            const streamRevision = 4;
+                            try {
+                                yield bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""], { dispatched: true });
+                            }
+                            catch (err) {
+                                // error expected
+                                chai_1.assert.equal(err.message, "Invalid stream revision, expected '3'");
+                                return;
+                            }
+                            throw new Error(`Expected to fail`);
+                        });
+                    });
+                    it("cannot write a commit if there are undispatched events", function () {
+                        return __awaiter(this, void 0, void 0, function* () {
+                            yield insertSampleBucket([SAMPLE_EVENT4_NOT_DISPATCHED]);
+                            const streamRevision = 2;
+                            try {
+                                yield bucket.write(SAMPLE_EVENT4_NOT_DISPATCHED.StreamId, streamRevision, [""], { dispatched: true });
+                            }
+                            catch (err) {
+                                // error expected
+                                chai_1.assert.isTrue(err instanceof index_1.UndispatchedEventsFoundError, err.message);
+                                return;
+                            }
+                            throw new Error(`Expected to fail`);
+                        });
                     });
                 });
-                it("cannot write a commit with a stream revision greater than the expected", function () {
+                it("write an event", function () {
                     return __awaiter(this, void 0, void 0, function* () {
-                        const streamRevision = 4;
-                        try {
-                            yield bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""]);
-                        }
-                        catch (err) {
-                            // error expected
-                            chai_1.assert.equal(err.message, "Invalid stream revision, expected '3'");
-                            return;
-                        }
-                        throw new Error(`Expected to fail`);
+                        const streamId = bucket.randomStreamId();
+                        yield bucket.write(streamId, 0, ["e1"], { dispatched: true });
+                        const commits = yield bucket.getCommitsArray({ streamId });
+                        chai_1.assert.equal(commits.length, 1);
+                        chai_1.assert.equal(commits[0]._id, 1);
+                        chai_1.assert.equal(commits[0].Dispatched, true);
+                        chai_1.assert.equal(commits[0].Events[0], "e1");
+                        chai_1.assert.equal(commits[0].StreamId, streamId);
+                        chai_1.assert.equal(commits[0].StreamRevisionStart, 0);
+                        chai_1.assert.equal(commits[0].StreamRevisionEnd, 1);
                     });
                 });
-                it("cannot write a commit if there are undispatched events", function () {
+                it("write multiple events", function () {
                     return __awaiter(this, void 0, void 0, function* () {
-                        yield insertSampleBucket([SAMPLE_EVENT4_NOT_DISPATCHED]);
-                        const streamRevision = 2;
-                        try {
-                            yield bucket.write(SAMPLE_EVENT4_NOT_DISPATCHED.StreamId, streamRevision, [""]);
-                        }
-                        catch (err) {
-                            // error expected
-                            chai_1.assert.isTrue(err instanceof index_1.UndispatchedEventsFoundError, err.message);
-                            return;
-                        }
-                        throw new Error(`Expected to fail`);
+                        const streamId = bucket.randomStreamId();
+                        yield bucket.write(streamId, 0, ["e1", "e2"], { dispatched: true });
+                        const commits = yield bucket.getCommitsArray({ streamId });
+                        chai_1.assert.equal(commits.length, 1);
+                        chai_1.assert.equal(commits[0]._id, 1);
+                        chai_1.assert.equal(commits[0].Dispatched, true);
+                        chai_1.assert.equal(commits[0].Events[0], "e1");
+                        chai_1.assert.equal(commits[0].Events[1], "e2");
+                        chai_1.assert.equal(commits[0].StreamId, streamId);
+                        chai_1.assert.equal(commits[0].StreamRevisionStart, 0);
+                        chai_1.assert.equal(commits[0].StreamRevisionEnd, 2);
+                    });
+                });
+                it("write multiple commits", function () {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        const streamId = bucket.randomStreamId();
+                        yield bucket.write(streamId, 0, ["e1", "e2"], { dispatched: true });
+                        yield bucket.write(streamId, 2, ["e3", "e4"], { dispatched: true });
+                        const commits = yield bucket.getCommitsArray({ streamId });
+                        chai_1.assert.equal(commits.length, 2);
+                        chai_1.assert.equal(commits[0]._id, 1);
+                        chai_1.assert.equal(commits[0].Dispatched, true);
+                        chai_1.assert.equal(commits[0].Events[0], "e1");
+                        chai_1.assert.equal(commits[0].Events[1], "e2");
+                        chai_1.assert.equal(commits[0].StreamId, streamId);
+                        chai_1.assert.equal(commits[0].StreamRevisionStart, 0);
+                        chai_1.assert.equal(commits[0].StreamRevisionEnd, 2);
+                        chai_1.assert.equal(commits[1]._id, 2);
+                        chai_1.assert.equal(commits[1].Dispatched, true);
+                        chai_1.assert.equal(commits[1].Events[0], "e3");
+                        chai_1.assert.equal(commits[1].Events[1], "e4");
+                        chai_1.assert.equal(commits[1].StreamId, streamId);
+                        chai_1.assert.equal(commits[1].StreamRevisionStart, 2);
+                        chai_1.assert.equal(commits[1].StreamRevisionEnd, 4);
                     });
                 });
             });
@@ -182,11 +274,6 @@ describe("EventStore", function () {
                 beforeEach(function () {
                     return __awaiter(this, void 0, void 0, function* () {
                         yield insertSampleBucket([SAMPLE_EVENT2, SAMPLE_EVENT3, SAMPLE_EVENT1]);
-                    });
-                });
-                afterEach(function () {
-                    return __awaiter(this, void 0, void 0, function* () {
-                        yield clearSampleBucket();
                     });
                 });
                 it("should be possible to read commits as stream", function () {

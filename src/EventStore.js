@@ -10,9 +10,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongodb_1 = require("mongodb");
 const Bucket_1 = require("./Bucket");
+const autoIncrementStrategies_1 = require("./autoIncrementStrategies");
 class EventStore {
     constructor(options) {
         this.options = options;
+        this.autoIncrementStrategy = new autoIncrementStrategies_1.IncrementCountersStrategy(this);
     }
     connect() {
         return __awaiter(this, void 0, void 0, function* () {

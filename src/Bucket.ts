@@ -56,9 +56,12 @@ export class Bucket {
 		streamId: string,
 		expectedStreamRevision: number,
 		events: any[],
-		options?: WriteOptions): Promise<WriteResult> {
+		options: WriteOptions = { dispatched: false }): Promise<WriteResult> {
 
 		// sanity check
+		if (!options.dispatched) {
+			throw new Error("Automatic dispatching not yet supported");
+		}
 		if (!streamId) {
 			throw new Error("Invalid stream id");
 		}
@@ -77,7 +80,7 @@ export class Bucket {
 			? lastCommit.StreamRevisionEnd
 			: await this.streamRevision(streamId);
 		if (expectedStreamRevision < currentStreamRevision) {
-			throw new ConcurrencyError(`Expected stream revision ${currentStreamRevision}`);
+			throw new ConcurrencyError(`Concurrency error, expected stream revision ${currentStreamRevision}`);
 		}
 		if (expectedStreamRevision > currentStreamRevision) {
 			throw new Error(`Invalid stream revision, expected '${currentStreamRevision}'`);
@@ -88,24 +91,26 @@ export class Bucket {
 			throw new UndispatchedEventsFoundError(`Undispatched events found for stream ${streamId}`);
 		}
 
-		// var commit = await CreateCommitAsync(streamId, expectedStreamRevision, eventsArray, lastCommit).ConfigureAwait(false);
+		const commit = await this.createCommit(
+			streamId,
+			expectedStreamRevision,
+			events,
+			options.dispatched,
+			lastCommit);
 
-		// try
-		// {
-		// 	await Collection.InsertOneAsync(commit)
-		// 		.ConfigureAwait(false);
-		// }
-		// catch (MongoWriteException ex)
-		// {
-		// 	if (ex.IsDuplicateKeyException())
-		// 		throw new ConcurrencyWriteException($"Someone else is working on the same bucket ({BucketName}) or stream ({commit.StreamId})", ex);
-		// }
+		try {
+			await this.collection.insertOne(commit);
+		} catch (err) {
+			if (MongoHelpers.isDuplicateError(err)) {
+				throw new ConcurrencyError("Concurrency error, bucket revision duplicate key");
+			}
 
-		// var dispatchTask = DispatchCommitAsync(commit);
+			throw err;
+		}
 
-		// return new WriteResult<T>(commit, dispatchTask);
-
-		return new WriteResult();
+		return {
+			commit: MongoHelpers.mongoDocToCommitData(commit)
+		};
 	}
 
 	async getCommitById(id: number): Promise<CommitData | undefined> {
@@ -229,5 +234,25 @@ export class Bucket {
 		}
 
 		return cursor;
+	}
+
+	private async createCommit(
+		streamId: string,
+		expectedStreamRevision: number,
+		events: any[],
+		dispatched: boolean,
+		lastCommit?: CommitData): Promise<MongoDbCommit> {
+
+		const bucketRevision = await this.eventStore.autoIncrementStrategy
+			.increment(this.bucketName, lastCommit);
+
+		return {
+			_id: bucketRevision,
+			Dispatched: dispatched,
+			Events: events,
+			StreamId: MongoHelpers.stringToBinaryUUID(streamId),
+			StreamRevisionStart: expectedStreamRevision,
+			StreamRevisionEnd: expectedStreamRevision + events.length
+		};
 	}
 }

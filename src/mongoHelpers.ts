@@ -69,10 +69,15 @@ function commitDataToMongoDoc(commit?: CommitData): MongoDbCommit | undefined {
 	};
 }
 
+function isDuplicateError(err: any) {
+	return err.code === 11000;
+}
+
 export const MongoHelpers = {
 	stringToBinaryUUID,
 	binaryUUIDToString,
 	intToLong,
 	mongoDocToCommitData,
-	commitDataToMongoDoc
+	commitDataToMongoDoc,
+	isDuplicateError
 };

@@ -1,5 +1,6 @@
 import {MongoClient, MongoClientOptions, Db as MongoDatabase, Collection as MongoCollection} from "mongodb";
 import {Bucket} from "./Bucket";
+import {AutoIncrementStrategy, IncrementCountersStrategy} from "./autoIncrementStrategies";
 
 export interface EventStoreOptions {
 	url: string;
@@ -8,8 +9,10 @@ export interface EventStoreOptions {
 
 export class EventStore {
 	db: MongoDatabase | undefined;
+	autoIncrementStrategy: AutoIncrementStrategy;
 
 	constructor(private options: EventStoreOptions) {
+		this.autoIncrementStrategy = new IncrementCountersStrategy(this);
 	}
 
 	async connect(): Promise<EventStore> {

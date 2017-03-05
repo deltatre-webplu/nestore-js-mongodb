@@ -1,11 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-class WriteResult {
-}
-exports.WriteResult = WriteResult;
-class WriteOptions {
-}
-exports.WriteOptions = WriteOptions;
 class ConcurrencyError extends Error {
     constructor(message) {
         super(message);

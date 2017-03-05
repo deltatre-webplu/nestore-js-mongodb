@@ -48,9 +48,12 @@ class Bucket {
             this.indexesEnsured = true;
         });
     }
-    write(streamId, expectedStreamRevision, events, options) {
+    write(streamId, expectedStreamRevision, events, options = { dispatched: false }) {
         return __awaiter(this, void 0, void 0, function* () {
             // sanity check
+            if (!options.dispatched) {
+                throw new Error("Automatic dispatching not yet supported");
+            }
             if (!streamId) {
                 throw new Error("Invalid stream id");
             }
@@ -67,7 +70,7 @@ class Bucket {
                 ? lastCommit.StreamRevisionEnd
                 : yield this.streamRevision(streamId);
             if (expectedStreamRevision < currentStreamRevision) {
-                throw new nestore_types_1.ConcurrencyError(`Expected stream revision ${currentStreamRevision}`);
+                throw new nestore_types_1.ConcurrencyError(`Concurrency error, expected stream revision ${currentStreamRevision}`);
             }
             if (expectedStreamRevision > currentStreamRevision) {
                 throw new Error(`Invalid stream revision, expected '${currentStreamRevision}'`);
@@ -76,20 +79,19 @@ class Bucket {
             if (lastCommit && lastCommit.Dispatched === false) {
                 throw new nestore_types_1.UndispatchedEventsFoundError(`Undispatched events found for stream ${streamId}`);
             }
-            // var commit = await CreateCommitAsync(streamId, expectedStreamRevision, eventsArray, lastCommit).ConfigureAwait(false);
-            // try
-            // {
-            // 	await Collection.InsertOneAsync(commit)
-            // 		.ConfigureAwait(false);
-            // }
-            // catch (MongoWriteException ex)
-            // {
-            // 	if (ex.IsDuplicateKeyException())
-            // 		throw new ConcurrencyWriteException($"Someone else is working on the same bucket ({BucketName}) or stream ({commit.StreamId})", ex);
-            // }
-            // var dispatchTask = DispatchCommitAsync(commit);
-            // return new WriteResult<T>(commit, dispatchTask);
-            return new nestore_types_1.WriteResult();
+            const commit = yield this.createCommit(streamId, expectedStreamRevision, events, options.dispatched, lastCommit);
+            try {
+                yield this.collection.insertOne(commit);
+            }
+            catch (err) {
+                if (mongoHelpers_1.MongoHelpers.isDuplicateError(err)) {
+                    throw new nestore_types_1.ConcurrencyError("Concurrency error, bucket revision duplicate key");
+                }
+                throw err;
+            }
+            return {
+                commit: mongoHelpers_1.MongoHelpers.mongoDocToCommitData(commit)
+            };
         });
     }
     getCommitById(id) {
@@ -198,6 +200,20 @@ class Bucket {
             cursor = cursor.batchSize(options.batchSize);
         }
         return cursor;
+    }
+    createCommit(streamId, expectedStreamRevision, events, dispatched, lastCommit) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const bucketRevision = yield this.eventStore.autoIncrementStrategy
+                .increment(this.bucketName, lastCommit);
+            return {
+                _id: bucketRevision,
+                Dispatched: dispatched,
+                Events: events,
+                StreamId: mongoHelpers_1.MongoHelpers.stringToBinaryUUID(streamId),
+                StreamRevisionStart: expectedStreamRevision,
+                StreamRevisionEnd: expectedStreamRevision + events.length
+            };
+        });
     }
 }
 exports.Bucket = Bucket;

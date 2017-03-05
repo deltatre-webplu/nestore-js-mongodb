@@ -9,4 +9,5 @@ export declare const MongoHelpers: {
         (doc: MongoDbCommit): CommitData;
     };
     commitDataToMongoDoc: (commit?: CommitData | undefined) => MongoDbCommit | undefined;
+    isDuplicateError: (err: any) => boolean;
 };
