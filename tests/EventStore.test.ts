@@ -192,7 +192,21 @@ describe("EventStore", function() {
 						throw new Error(`Expected to fail with a concurrency error`);
 					});
 
-					it("cannot write a commit with a stream revision greater than the expected", async function() {
+					it("cannot write a commit with a stream revision already used", async function() {
+						const streamRevision = 2;
+
+						try {
+							await bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""], { dispatched: true });
+						} catch (err) {
+							// error expected
+							assert.isTrue(err instanceof ConcurrencyError);
+							return;
+						}
+
+						throw new Error(`Expected to fail`);
+					});
+
+					it("cannot write a commit with a stream revision not sequential", async function() {
 						const streamRevision = 4;
 
 						try {
