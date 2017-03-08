@@ -547,6 +547,35 @@ describe("EventStore", function () {
                     });
                 });
             });
+            describe("Read and write commits", function () {
+                it("Real world usage", function () {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        const streamId = bucket.randomStreamId();
+                        const projection = bucket.projectionStream({ streamId }, { waitInterval: 50 });
+                        let totals = 0;
+                        const donePromise = new Promise((resolve, reject) => {
+                            projection
+                                .on("data", (doc) => {
+                                totals += doc.Events[0].value;
+                                if (doc._id === 10) {
+                                    projection.close();
+                                }
+                            })
+                                .on("error", (err) => {
+                                projection.close();
+                                reject(err);
+                            })
+                                .on("close", () => {
+                                resolve(totals);
+                            });
+                        });
+                        for (let i = 0; i < 10; i++) {
+                            yield bucket.write(streamId, i, [{ value: i }], { dispatched: true });
+                        }
+                        chai_1.assert.equal(yield donePromise, 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9);
+                    });
+                });
+            });
         });
     });
 });

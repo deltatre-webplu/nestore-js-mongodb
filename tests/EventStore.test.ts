@@ -587,6 +587,39 @@ describe("EventStore", function() {
 				});
 			});
 
+			describe("Read and write commits", function() {
+				it("Real world usage", async function() {
+					const streamId = bucket.randomStreamId();
+
+					const projection = bucket.projectionStream({streamId}, {waitInterval : 50});
+
+					let totals = 0;
+					const donePromise = new Promise((resolve, reject) => {
+						projection
+						.on("data", (doc: CommitData) => {
+							totals += doc.Events[0].value;
+
+							if (doc._id === 10) { // when last event is read close the projection
+								projection.close();
+							}
+						})
+						.on("error", (err) => {
+							projection.close();
+							reject(err);
+						})
+						.on("close", () => {
+							resolve(totals);
+						});
+					});
+
+					for (let i = 0; i < 10; i++) {
+						await bucket.write(streamId, i, [{value: i}], { dispatched: true });
+					}
+
+					assert.equal(await donePromise, 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9);
+				});
+			});
+
 		});
 	});
 });
