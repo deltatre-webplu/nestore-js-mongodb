@@ -1,11 +1,6 @@
 import * as createDebug from "debug";
 import {Readable as ReadableStream} from "stream";
-// use module augmentation to add isPaused because is missing...
-declare module "stream" {
-	interface Readable { // tslint:disable-line
-		isPaused(): Boolean;
-	}
-}
+
 
 import {Bucket} from "./Bucket";
 import {CommitsFilters, ProjectionStreamOptions, CommitData, MongoDbCommit} from "./nestore-types";
@@ -20,7 +15,7 @@ export class ProjectionStream extends ReadableStream {
 
 	private filters: CommitsFilters;
 	private options: ProjectionStreamOptions;
-	private closed: Boolean = false;
+	private closed = false;
 	private source: MongoCursor<MongoDbCommit>;
 	private timeoutObj: number | undefined;
 
@@ -163,7 +158,8 @@ export class ProjectionStream extends ReadableStream {
 				}
 			});
 
-			if (this.isPaused()) {
+			// isPaused because is missing from Readable stream...
+			if ((this as any).isPaused()) {
 				sourceCursor.pause();
 			}
 		});

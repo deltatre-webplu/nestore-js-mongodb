@@ -1,4 +1,4 @@
-import {Binary as MongoDbBinary} from "mongodb";
+import {Binary as MongoDbBinary, ReadPreference as MongoDbReadPreference} from "mongodb";
 
 export interface CommitsFilters {
 	dispatched?: number;
@@ -10,6 +10,7 @@ export interface CommitsFilters {
 
 export interface CommitsOptions {
 	batchSize?: number;
+	readPreference?: MongoDbReadPreference | string;
 }
 
 export interface ProjectionStreamOptions extends CommitsOptions {

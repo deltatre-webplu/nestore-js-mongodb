@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const chai_1 = require("chai");
 const index_1 = require("../index");
+const mongodb = require("mongodb");
 const config = require("./config.json"); // tslint:disable-line
 describe("EventStore", function () {
     this.slow(500);
@@ -431,6 +432,15 @@ describe("EventStore", function () {
                 });
                 it("should be possible to read commits as array", function () {
                     return bucket.getCommitsArray()
+                        .then((docs) => {
+                        chai_1.assert.equal(docs.length, 3);
+                        chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT1);
+                        chai_1.assert.deepEqual(docs[1], SAMPLE_EVENT2);
+                        chai_1.assert.deepEqual(docs[2], SAMPLE_EVENT3);
+                    });
+                });
+                it("should be possible to read commits using read preference", function () {
+                    return bucket.getCommitsArray(undefined, { readPreference: mongodb.ReadPreference.SECONDARY_PREFERRED })
                         .then((docs) => {
                         chai_1.assert.equal(docs.length, 3);
                         chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT1);

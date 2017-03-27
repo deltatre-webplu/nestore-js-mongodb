@@ -1,10 +1,5 @@
 /// <reference types="node" />
 import { Readable as ReadableStream } from "stream";
-declare module "stream" {
-    interface Readable {
-        isPaused(): Boolean;
-    }
-}
 import { Bucket } from "./Bucket";
 import { CommitsFilters, ProjectionStreamOptions, CommitData } from "./nestore-types";
 export declare class ProjectionStream extends ReadableStream {
@@ -16,7 +11,7 @@ export declare class ProjectionStream extends ReadableStream {
     private timeoutObj;
     constructor(bucket: Bucket, filters: CommitsFilters, options: ProjectionStreamOptions);
     close(): Promise<any>;
-    isClosed(): Boolean;
+    isClosed(): boolean;
     resume(): ReadableStream;
     on(event: "close" | "end" | "readable", listener: () => void): this;
     on(event: "data", listener: (chunk: Buffer | string | CommitData) => void): this;

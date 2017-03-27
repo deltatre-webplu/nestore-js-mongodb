@@ -108,6 +108,7 @@ class ProjectionStream extends stream_1.Readable {
                     this._startTimer();
                 }
             });
+            // isPaused because is missing from Readable stream...
             if (this.isPaused()) {
                 sourceCursor.pause();
             }

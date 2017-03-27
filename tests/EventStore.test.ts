@@ -3,6 +3,7 @@
 import {assert} from "chai";
 import {EventStore, MongoHelpers, Bucket, CommitData,
 	ConcurrencyError, UndispatchedEventsFoundError} from "../index";
+import * as mongodb from "mongodb";
 
 const config = require("./config.json"); // tslint:disable-line
 
@@ -457,6 +458,16 @@ describe("EventStore", function() {
 
 				it("should be possible to read commits as array", function() {
 					return bucket.getCommitsArray()
+					.then((docs) => {
+						assert.equal(docs.length, 3);
+						assert.deepEqual(docs[0], SAMPLE_EVENT1);
+						assert.deepEqual(docs[1], SAMPLE_EVENT2);
+						assert.deepEqual(docs[2], SAMPLE_EVENT3);
+					});
+				});
+
+				it("should be possible to read commits using read preference", function() {
+					return bucket.getCommitsArray(undefined, { readPreference: mongodb.ReadPreference.SECONDARY_PREFERRED })
 					.then((docs) => {
 						assert.equal(docs.length, 3);
 						assert.deepEqual(docs[0], SAMPLE_EVENT1);

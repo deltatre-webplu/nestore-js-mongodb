@@ -2,7 +2,7 @@ import * as createDebug from "debug";
 import {ProjectionStream} from "./ProjectionStream";
 import {EventStore} from "./EventStore";
 import {Readable as ReadableStream} from "stream";
-import {Collection as MongoCollection, Cursor as MongoCursor} from "mongodb";
+import {Collection as MongoCollection, Cursor as MongoCursor, ReadPreference} from "mongodb";
 
 import {WriteResult, WriteOptions, CommitsFilters, CommitsOptions, CommitData,
 	ProjectionStreamOptions, MongoDbCommit,
@@ -228,6 +228,10 @@ export class Bucket {
 		let cursor = this.collection
 		.find(mongoFilters)
 		.sort(sort);
+
+		if (options.readPreference) {
+			cursor = cursor.setReadPreference(options.readPreference);
+		}
 
 		if (options.batchSize) {
 			cursor = cursor.batchSize(options.batchSize);

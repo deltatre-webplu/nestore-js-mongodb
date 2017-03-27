@@ -5,6 +5,7 @@
     "taskName": "src-build",
     "command": "npm",
     "args": ["run", "develop"],
+    "isShellCommand": true,
     "isBackground": true,
     "problemMatcher": "$tsc"
 }

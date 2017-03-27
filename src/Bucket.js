@@ -196,6 +196,9 @@ class Bucket {
         let cursor = this.collection
             .find(mongoFilters)
             .sort(sort);
+        if (options.readPreference) {
+            cursor = cursor.setReadPreference(options.readPreference);
+        }
         if (options.batchSize) {
             cursor = cursor.batchSize(options.batchSize);
         }

@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { ProjectionStream } from "./ProjectionStream";
 import { EventStore } from "./EventStore";
 import { Readable as ReadableStream } from "stream";
