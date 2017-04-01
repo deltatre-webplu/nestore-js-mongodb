@@ -50,7 +50,7 @@ export class ProjectionStream extends ReadableStream {
 		return this.closed;
 	}
 
-	resume(): ReadableStream {
+	resume(): this {
 		debug("resume");
 		super.resume();
 
@@ -69,7 +69,7 @@ export class ProjectionStream extends ReadableStream {
 		return super.on(event, listener);
 	}
 
-	pause(): ReadableStream {
+	pause(): this {
 		debug("pause");
 		super.pause();
 

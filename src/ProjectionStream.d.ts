@@ -12,14 +12,14 @@ export declare class ProjectionStream extends ReadableStream {
     constructor(bucket: Bucket, filters: CommitsFilters, options: ProjectionStreamOptions);
     close(): Promise<any>;
     isClosed(): boolean;
-    resume(): ReadableStream;
+    resume(): this;
     on(event: "close" | "end" | "readable", listener: () => void): this;
     on(event: "data", listener: (chunk: Buffer | string | CommitData) => void): this;
     on(event: "error", listener: (err: Error) => void): this;
     on(event: "wait", listener: (info: {
         filters: CommitsFilters;
     }) => void): this;
-    pause(): ReadableStream;
+    pause(): this;
     _read(): void;
     private _startTimer(interval?);
     private _stopTimer();
