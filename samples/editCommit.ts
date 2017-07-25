@@ -2,6 +2,9 @@ import {EventStore, Bucket, CommitData, MongoHelpers} from "../index";
 
 // set SAMPLE_URL=mongodb://localhost:27017/forge-events
 const sampleUrl = process.env.SAMPLE_URL;
+if (!sampleUrl) {
+	throw new Error("Invalid SAMPLE_URL");
+}
 
 const eventStore = new EventStore({url: sampleUrl});
 

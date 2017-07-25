@@ -11,6 +11,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const index_1 = require("../index");
 // set SAMPLE_URL=mongodb://localhost:27017/forge-events
 const sampleUrl = process.env.SAMPLE_URL;
+if (!sampleUrl) {
+    throw new Error("Invalid SAMPLE_URL");
+}
 const eventStore = new index_1.EventStore({ url: sampleUrl });
 const IS_TITLE_SET_REGEX = /^TitleSet\<Story\>$/;
 function getCommitsToUpdate(bucket) {

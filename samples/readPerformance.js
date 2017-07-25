@@ -12,16 +12,19 @@ const index_1 = require("../index");
 const progress_logger_js_1 = require("progress-logger-js");
 // set SAMPLE_URL=mongodb://localhost:27017/Forge
 const sampleUrl = process.env.SAMPLE_URL;
-let progress = new progress_logger_js_1.ProgressLogger();
-let eventStore = new index_1.EventStore({ url: sampleUrl });
+if (!sampleUrl) {
+    throw new Error("Invalid SAMPLE_URL");
+}
+const progress = new progress_logger_js_1.ProgressLogger();
+const eventStore = new index_1.EventStore({ url: sampleUrl });
 function readAll() {
-    let bucket = eventStore.bucket("wcm");
+    const bucket = eventStore.bucket("wcm");
     let lastRevision = 0;
-    let filters = {
+    const filters = {
         fromBucketRevision: lastRevision,
         eventFilters: {}
     };
-    let stream = bucket.getCommitsStream(filters);
+    const stream = bucket.getCommitsStream(filters);
     return new Promise((resolve, reject) => {
         stream
             .on("data", (doc) => {

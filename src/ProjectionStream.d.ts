@@ -14,7 +14,8 @@ export declare class ProjectionStream extends ReadableStream {
     isClosed(): boolean;
     resume(): this;
     on(event: "close" | "end" | "readable", listener: () => void): this;
-    on(event: "data", listener: (chunk: Buffer | string | CommitData) => void): this;
+    on(event: "data", listener: (chunk: Buffer | string) => void): this;
+    on(event: "data", listener: (chunk: CommitData) => void): this;
     on(event: "error", listener: (err: Error) => void): this;
     on(event: "wait", listener: (info: {
         filters: CommitsFilters;

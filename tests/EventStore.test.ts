@@ -338,7 +338,7 @@ describe("EventStore", function() {
 								projection.close();
 							}
 						})
-						.on("error", (err) => {
+						.on("error", (err: Error) => {
 							projection.close();
 							reject(err);
 						})
@@ -376,7 +376,7 @@ describe("EventStore", function() {
 							assert.equal(data.filters.fromBucketRevision, 4);
 							insertSampleBucket([SAMPLE_EVENT4]);
 						})
-						.on("error", (err) => {
+						.on("error", (err: Error) => {
 							projection.close();
 							reject(err);
 						})
@@ -415,7 +415,7 @@ describe("EventStore", function() {
 							assert.equal(data.filters.fromBucketRevision, 4); // check that the next stream will start from 4
 							insertSampleBucket([SAMPLE_EVENT4]);
 						})
-						.on("error", (err) => {
+						.on("error", (err: Error) => {
 							projection.close();
 							reject(err);
 						})
@@ -614,7 +614,7 @@ describe("EventStore", function() {
 								projection.close();
 							}
 						})
-						.on("error", (err) => {
+						.on("error", (err: Error) => {
 							projection.close();
 							reject(err);
 						})

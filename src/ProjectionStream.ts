@@ -62,10 +62,12 @@ export class ProjectionStream extends ReadableStream {
 	}
 
 	on(event: "close" | "end" | "readable", listener: () => void): this;
-	on(event: "data", listener: (chunk: Buffer | string | CommitData) => void): this;
+	on(event: "data", listener: (chunk: Buffer | string) => void): this;
+	// tslint:disable-next-line
+	on(event: "data", listener: (chunk: CommitData) => void): this;
 	on(event: "error", listener: (err: Error) => void): this;
 	on(event: "wait", listener: (info: { filters: CommitsFilters }) => void): this;
-	on(event: string, listener: Function): this {
+	on(event: string, listener: (...args: any[]) => void): this {
 		return super.on(event, listener);
 	}
 
