@@ -27,7 +27,7 @@
     "@types/node": "8.0.16",
     "@types/uuid": "2.0.29",
     "debug": "2.2.0",
-    "mongodb": "2.2.11",
+    "mongodb": "2.2.30",
     "uuid": "3.0.1"
   },
   "devDependencies": {
