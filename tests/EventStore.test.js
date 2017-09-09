@@ -183,6 +183,8 @@ describe("EventStore", function () {
                             catch (err) {
                                 // error expected
                                 chai_1.assert.isTrue(err instanceof index_1.ConcurrencyError);
+                                chai_1.assert.equal(err.errorType, "ConcurrencyError");
+                                chai_1.assert.equal(err.currentStreamRevision, 3);
                                 return;
                             }
                             throw new Error(`Expected to fail with a concurrency error`);
@@ -197,6 +199,8 @@ describe("EventStore", function () {
                             catch (err) {
                                 // error expected
                                 chai_1.assert.isTrue(err instanceof index_1.ConcurrencyError);
+                                chai_1.assert.equal(err.errorType, "ConcurrencyError");
+                                chai_1.assert.equal(err.currentStreamRevision, 3);
                                 return;
                             }
                             throw new Error(`Expected to fail`);

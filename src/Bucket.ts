@@ -80,7 +80,9 @@ export class Bucket {
 			? lastCommit.StreamRevisionEnd
 			: await this.streamRevision(streamId);
 		if (expectedStreamRevision < currentStreamRevision) {
-			throw new ConcurrencyError(`Concurrency error, expected stream revision ${currentStreamRevision}`);
+			const cError = new ConcurrencyError(`Concurrency error, expected stream revision ${currentStreamRevision}`);
+			cError.currentStreamRevision = currentStreamRevision;
+			throw cError;
 		}
 		if (expectedStreamRevision > currentStreamRevision) {
 			throw new Error(`Invalid stream revision, expected '${currentStreamRevision}'`);
@@ -102,7 +104,7 @@ export class Bucket {
 			await this.collection.insertOne(commit);
 		} catch (err) {
 			if (MongoHelpers.isDuplicateError(err)) {
-				throw new ConcurrencyError("Concurrency error, bucket revision duplicate key");
+				throw new ConcurrencyError("Concurrency error, bucket or stream revision duplicate key");
 			}
 
 			throw err;

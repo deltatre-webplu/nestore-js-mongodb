@@ -47,12 +47,15 @@ export interface WriteOptions {
 }
 
 export class ConcurrencyError extends Error {
+	errorType = "ConcurrencyError";
+	currentStreamRevision?: number;
 	constructor(message: string) {
 		super(message);
 	}
 }
 
 export class UndispatchedEventsFoundError extends Error {
+	errorType = "UndispatchedEventsFoundError";
 	constructor(message: string) {
 		super(message);
 	}

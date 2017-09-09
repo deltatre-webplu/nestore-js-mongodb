@@ -38,8 +38,11 @@ export interface WriteOptions {
     dispatched?: boolean;
 }
 export declare class ConcurrencyError extends Error {
+    errorType: string;
+    currentStreamRevision?: number;
     constructor(message: string);
 }
 export declare class UndispatchedEventsFoundError extends Error {
+    errorType: string;
     constructor(message: string);
 }

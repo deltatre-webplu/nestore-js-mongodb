@@ -70,7 +70,9 @@ class Bucket {
                 ? lastCommit.StreamRevisionEnd
                 : yield this.streamRevision(streamId);
             if (expectedStreamRevision < currentStreamRevision) {
-                throw new nestore_types_1.ConcurrencyError(`Concurrency error, expected stream revision ${currentStreamRevision}`);
+                const cError = new nestore_types_1.ConcurrencyError(`Concurrency error, expected stream revision ${currentStreamRevision}`);
+                cError.currentStreamRevision = currentStreamRevision;
+                throw cError;
             }
             if (expectedStreamRevision > currentStreamRevision) {
                 throw new Error(`Invalid stream revision, expected '${currentStreamRevision}'`);
@@ -85,7 +87,7 @@ class Bucket {
             }
             catch (err) {
                 if (mongoHelpers_1.MongoHelpers.isDuplicateError(err)) {
-                    throw new nestore_types_1.ConcurrencyError("Concurrency error, bucket revision duplicate key");
+                    throw new nestore_types_1.ConcurrencyError("Concurrency error, bucket or stream revision duplicate key");
                 }
                 throw err;
             }

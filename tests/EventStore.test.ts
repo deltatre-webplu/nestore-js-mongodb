@@ -187,6 +187,8 @@ describe("EventStore", function() {
 						} catch (err) {
 							// error expected
 							assert.isTrue(err instanceof ConcurrencyError);
+							assert.equal(err.errorType, "ConcurrencyError");
+							assert.equal(err.currentStreamRevision, 3);
 							return;
 						}
 
@@ -201,6 +203,8 @@ describe("EventStore", function() {
 						} catch (err) {
 							// error expected
 							assert.isTrue(err instanceof ConcurrencyError);
+							assert.equal(err.errorType, "ConcurrencyError");
+							assert.equal(err.currentStreamRevision, 3);
 							return;
 						}
 
