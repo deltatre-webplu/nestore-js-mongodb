@@ -7,5 +7,6 @@
         "**/*.js.map": true,
         "mongo-data": true,
         "node_modules": true
-    }
+    },
+    "tslint.alwaysShowRuleFailuresAsWarnings": true
 }

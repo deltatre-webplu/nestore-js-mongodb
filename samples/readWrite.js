@@ -23,7 +23,9 @@ function writeAndRead() {
         yield bucket.write(streamId, 0, [{ name: "A" }], options);
         yield bucket.write(streamId, 1, [{ name: "B" }], options);
         const commits = yield bucket.getCommitsArray({ streamId });
+        // tslint:disable-next-line:no-console
         console.log(commits[0].Events[0].name); // print A
+        // tslint:disable-next-line:no-console
         console.log(commits[1].Events[0].name); // print B
     });
 }
