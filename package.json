@@ -1,6 +1,6 @@
 {
   "name": "nestore-js-mongodb",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "Event store for NodeJs.",
   "main": "index.js",
   "typings": "index.d.ts",
