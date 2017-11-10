@@ -33,6 +33,28 @@ function binaryUUIDToString(value: MongoDbBinary): string {
 	return uuid;
 }
 
+function binaryCSUUIDToString(value: MongoDbBinary) {
+	// for compatiblity reason check if value is already converted...
+	if (typeof value === "string") {
+		return value;
+	}
+
+	const buffer = (value as any).buffer as Buffer;
+
+	const hex = buffer.toString("hex");
+	const a = hex.substr(6, 2) + hex.substr(4, 2) + hex.substr(2, 2) + hex.substr(0, 2);
+	const b = hex.substr(10, 2) + hex.substr(8, 2);
+	const c = hex.substr(14, 2) + hex.substr(12, 2);
+	const d = hex.substr(16, 16);
+	const hex2 = a + b + c + d;
+
+	return hex2.substr(0, 8)
+		+ "-" + hex2.substr(8, 4)
+		+ "-" + hex2.substr(12, 4)
+		+ "-" + hex2.substr(16, 4)
+		+ "-" + hex2.substr(20, 12);
+}
+
 function intToLong(value: number) {
 	return MongoDbLong.fromInt(value);
 }
