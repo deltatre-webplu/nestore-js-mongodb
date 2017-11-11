@@ -45,7 +45,7 @@ describe("EventStore", function() {
 				const col = eventStore.mongoCollection(SAMPLE_BUCKETNAME);
 
 				const mongoDbDocs = docs.map((d) => {
-					const newDoc = Object.assign({}, d) as any;
+					const newDoc = {...d} as any;
 					newDoc.StreamId = MongoHelpers.stringToBinaryUUID(newDoc.StreamId);
 					return newDoc;
 				});
@@ -560,8 +560,6 @@ describe("EventStore", function() {
 				});
 
 				it("should not be possible to update commit events with a different events number", async function() {
-					const doc = await bucket.getCommitById(SAMPLE_EVENT1._id);
-
 					// Clone events
 					const newEvents = [
 						...SAMPLE_EVENT1.Events,
@@ -583,7 +581,7 @@ describe("EventStore", function() {
 
 					// Clone events
 					const newEvents = Array.from(SAMPLE_EVENT1.Events);
-					newEvents[0] = Object.assign({}, newEvents[0]);
+					newEvents[0] = {...newEvents[0]};
 					newEvents[0].Field1 = "A modified";
 
 					// Update events
@@ -643,7 +641,7 @@ function makeId()	{
 	let text = "";
 	const possible = "abcdefghijklmnopqrstuvwxyz";
 
-	for (let i = 0; i < 5; i++ ) {
+	for (let i = 0; i < 5; i++) {
 		text += possible.charAt(Math.floor(Math.random() * possible.length));
 	}
 

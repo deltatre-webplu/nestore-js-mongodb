@@ -22,21 +22,21 @@
   },
   "homepage": "https://github.com/deltatre-webplu/nestore-js-mongodb#readme",
   "dependencies": {
-    "@types/debug": "0.0.29",
-    "@types/mongodb": "2.2.8",
-    "@types/node": "8.0.16",
-    "@types/uuid": "2.0.29",
-    "debug": "2.2.0",
-    "mongodb": "2.2.30",
-    "uuid": "3.0.1"
+    "@types/debug": "0.0.30",
+    "@types/mongodb": "2.2.15",
+    "@types/node": "8.0.51",
+    "@types/uuid": "3.4.3",
+    "debug": "3.1.0",
+    "mongodb": "2.2.33",
+    "uuid": "3.1.0"
   },
   "devDependencies": {
-    "@types/chai": "3.4.34",
-    "@types/mocha": "2.2.34",
-    "chai": "3.4.1",
-    "mocha": "2.3.3",
-    "progress-logger-js": "0.4.0",
-    "tslint": "5.0.0",
-    "typescript": "2.4.2"
+    "@types/chai": "4.0.4",
+    "@types/mocha": "2.2.44",
+    "chai": "4.1.2",
+    "mocha": "4.0.1",
+    "progress-logger-js": "0.5.0",
+    "tslint": "5.8.0",
+    "typescript": "2.6.1"
   }
 }

@@ -79,6 +79,7 @@ function isDuplicateError(err) {
 exports.MongoHelpers = {
     stringToBinaryUUID,
     binaryUUIDToString,
+    binaryCSUUIDToString,
     intToLong,
     mongoDocToCommitData,
     commitDataToMongoDoc,

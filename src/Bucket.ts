@@ -2,7 +2,7 @@ import * as createDebug from "debug";
 import {ProjectionStream} from "./ProjectionStream";
 import {EventStore} from "./EventStore";
 import {Readable as ReadableStream} from "stream";
-import {Collection as MongoCollection, Cursor as MongoCursor, ReadPreference} from "mongodb";
+import {Collection as MongoCollection, Cursor as MongoCursor} from "mongodb";
 
 import {WriteResult, WriteOptions, CommitsFilters, CommitsOptions, CommitData,
 	ProjectionStreamOptions, MongoDbCommit,
@@ -134,7 +134,7 @@ export class Bucket {
 		.toArray();
 
 		return docs
-			.map((d) => MongoHelpers.mongoDocToCommitData(d) );
+			.map((d) => MongoHelpers.mongoDocToCommitData(d));
 	}
 
 	projectionStream(filters?: CommitsFilters, options?: ProjectionStreamOptions): ProjectionStream {

@@ -1,4 +1,4 @@
-import {EventStore, Bucket, CommitData, MongoHelpers} from "../index";
+import {EventStore, Bucket, CommitData} from "../index";
 
 // set SAMPLE_URL=mongodb://localhost:27017/forge-events
 const sampleUrl = process.env.SAMPLE_URL;

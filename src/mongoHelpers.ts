@@ -98,6 +98,7 @@ function isDuplicateError(err: any) {
 export const MongoHelpers = {
 	stringToBinaryUUID,
 	binaryUUIDToString,
+	binaryCSUUIDToString,
 	intToLong,
 	mongoDocToCommitData,
 	commitDataToMongoDoc,

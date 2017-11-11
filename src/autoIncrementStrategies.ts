@@ -1,4 +1,4 @@
-import {Db as MongoDatabase, Collection as MongoCollection} from "mongodb";
+import {Collection as MongoCollection} from "mongodb";
 import {MongoHelpers} from "./mongoHelpers";
 
 import {CommitData} from "./nestore-types";
@@ -44,7 +44,7 @@ export class IncrementCountersStrategy implements AutoIncrementStrategy {
 		await this.createCounterAsync({ _id: bucketName, BucketRevision: lastRevision });
 
 		// try to increment again
-		return await this.increment(bucketName, lastCommit);
+		return this.increment(bucketName, lastCommit);
 	}
 
 	private async createCounterAsync(counter: Counter) {

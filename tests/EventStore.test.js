@@ -524,7 +524,6 @@ describe("EventStore", function () {
                 });
                 it("should not be possible to update commit events with a different events number", function () {
                     return __awaiter(this, void 0, void 0, function* () {
-                        const doc = yield bucket.getCommitById(SAMPLE_EVENT1._id);
                         // Clone events
                         const newEvents = [
                             ...SAMPLE_EVENT1.Events,

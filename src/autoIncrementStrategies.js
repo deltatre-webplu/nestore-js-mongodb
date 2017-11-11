@@ -34,7 +34,7 @@ class IncrementCountersStrategy {
             const lastRevision = lastCommit ? lastCommit._id : 0;
             yield this.createCounterAsync({ _id: bucketName, BucketRevision: lastRevision });
             // try to increment again
-            return yield this.increment(bucketName, lastCommit);
+            return this.increment(bucketName, lastCommit);
         });
     }
     createCounterAsync(counter) {
