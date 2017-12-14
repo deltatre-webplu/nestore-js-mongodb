@@ -5,6 +5,7 @@ export interface CommitsFilters {
     streamId?: string;
     fromBucketRevision?: number;
     toBucketRevision?: number;
+    fromStreamRevision?: number;
 }
 export interface CommitsOptions {
     batchSize?: number;
@@ -13,6 +14,11 @@ export interface CommitsOptions {
 export interface ProjectionStreamOptions extends CommitsOptions {
     waitInterval?: number;
 }
+export interface SortableCommitsOptions extends CommitsOptions {
+    sortDirection?: SortDirection;
+    limit?: number;
+}
+export declare type SortDirection = 1 | -1;
 export interface CommitInfo {
     _id: number;
     StreamId: string;

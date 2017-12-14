@@ -309,7 +309,7 @@ describe("EventStore", function() {
 					await insertSampleBucket([SAMPLE_EVENT2, SAMPLE_EVENT3, SAMPLE_EVENT1]);
 				});
 
-				it("should be possible to read commits as stream", function() {
+				it("should be possible to read commits as stream (default ascending)", function() {
 					const stream = bucket.getCommitsStream({});
 					const docs = new Array<CommitData>();
 					return new Promise((resolve) => {
@@ -328,6 +328,26 @@ describe("EventStore", function() {
 						assert.deepEqual(docs[2], SAMPLE_EVENT3);
 					});
 
+				});
+
+				it("should be possible to read commits as stream descending", function() {
+					const stream = bucket.getCommitsStream({}, {sortDirection: -1});
+					const docs = new Array<CommitData>();
+					return new Promise((resolve) => {
+						stream
+						.on("data", (doc: CommitData) => {
+							docs.push(doc);
+						})
+						.on("end", () => {
+							resolve();
+						});
+					})
+					.then(() => {
+						assert.equal(docs.length, 3);
+						assert.deepEqual(docs[0], SAMPLE_EVENT3);
+						assert.deepEqual(docs[1], SAMPLE_EVENT2);
+						assert.deepEqual(docs[2], SAMPLE_EVENT1);
+					});
 				});
 
 				it("should be possible to create a projection stream", function() {
@@ -460,13 +480,33 @@ describe("EventStore", function() {
 					.then(() => projectionChecks);
 				});
 
-				it("should be possible to read commits as array", function() {
+				it("should be possible to read commits as array (default ascending)", function() {
 					return bucket.getCommitsArray()
 					.then((docs) => {
 						assert.equal(docs.length, 3);
 						assert.deepEqual(docs[0], SAMPLE_EVENT1);
 						assert.deepEqual(docs[1], SAMPLE_EVENT2);
 						assert.deepEqual(docs[2], SAMPLE_EVENT3);
+					});
+				});
+
+				it("should be possible to read commits as array ascending", function() {
+					return bucket.getCommitsArray(undefined, {sortDirection: 1})
+					.then((docs) => {
+						assert.equal(docs.length, 3);
+						assert.deepEqual(docs[0], SAMPLE_EVENT1);
+						assert.deepEqual(docs[1], SAMPLE_EVENT2);
+						assert.deepEqual(docs[2], SAMPLE_EVENT3);
+					});
+				});
+
+				it("should be possible to read commits as array descending", function() {
+					return bucket.getCommitsArray(undefined, { sortDirection: -1 })
+					.then((docs) => {
+						assert.equal(docs.length, 3);
+						assert.deepEqual(docs[0], SAMPLE_EVENT3);
+						assert.deepEqual(docs[1], SAMPLE_EVENT2);
+						assert.deepEqual(docs[2], SAMPLE_EVENT1);
 					});
 				});
 
@@ -537,6 +577,49 @@ describe("EventStore", function() {
 					});
 				});
 
+				it("should be possible to read 2 commits filtering by bucket revision ascending", function() {
+					return bucket.getCommitsArray({fromBucketRevision: 2, toBucketRevision: 3}, {sortDirection: 1})
+					.then((docs) => {
+						assert.equal(docs.length, 2);
+						assert.deepEqual(docs[0], SAMPLE_EVENT2);
+						assert.deepEqual(docs[1], SAMPLE_EVENT3);
+					});
+				});
+
+				it("should be possible to read 2 commits filtering by bucket revision descending", function() {
+					return bucket.getCommitsArray({fromBucketRevision: 3, toBucketRevision: 2}, {sortDirection: -1})
+					.then((docs) => {
+						assert.equal(docs.length, 2);
+						assert.deepEqual(docs[0], SAMPLE_EVENT3);
+						assert.deepEqual(docs[1], SAMPLE_EVENT2);
+					});
+				});
+
+				it("should not be possible to filter by stream revision without a stream id", async function() {
+					try {
+						await bucket.getCommitsArray({fromStreamRevision: 1});
+					} catch (err) {
+						return;
+					}
+					throw new Error("Rejection expected");
+				});
+
+				it("should be possible to read 1 commits using limit ascending", function() {
+					return bucket.getCommitsArray({}, {sortDirection: 1, limit: 1})
+					.then((docs) => {
+						assert.equal(docs.length, 1);
+						assert.deepEqual(docs[0], SAMPLE_EVENT1);
+					});
+				});
+
+				it("should be possible to read 1 commits using limit descending", function() {
+					return bucket.getCommitsArray({}, {sortDirection: -1, limit: 1})
+					.then((docs) => {
+						assert.equal(docs.length, 1);
+						assert.deepEqual(docs[0], SAMPLE_EVENT3);
+					});
+				});
+
 				it("should be possible to read commits filtering by stream id", function() {
 					return bucket.getCommitsArray({streamId: "30000003-3003-3003-3003-300000000003" })
 					.then((docs) => {
@@ -597,6 +680,31 @@ describe("EventStore", function() {
 					// if I restore the old value then all other properties should be the same
 					doc.Events[0].Field1 = SAMPLE_EVENT1.Events[0].Field1;
 					assert.deepEqual(doc, SAMPLE_EVENT1);
+				});
+
+				describe("Read commits filtering by stream id", function() {
+
+					beforeEach(async function() {
+						await insertSampleBucket([STREAM_SAMPLE_EVENT_5, STREAM_SAMPLE_EVENT_6, STREAM_SAMPLE_EVENT_7]);
+					});
+
+					it("should be possible to read 2 commits filtering by stream revision ascending", function() {
+						return bucket.getCommitsArray({fromStreamRevision: 1, streamId: STEAM_SAMPLE_ID}, {limit: 2, sortDirection: 1})
+						.then((docs) => {
+							assert.equal(docs.length, 2);
+							assert.deepEqual(docs[0], STREAM_SAMPLE_EVENT_6);
+							assert.deepEqual(docs[1], STREAM_SAMPLE_EVENT_7);
+						});
+					});
+
+					it("should be possible to read 2 commits filtering by stream revision descending", function() {
+						return bucket.getCommitsArray({fromStreamRevision: 1, streamId: STEAM_SAMPLE_ID}, {limit: 2, sortDirection: -1})
+						.then((docs) => {
+							assert.equal(docs.length, 2);
+							assert.deepEqual(docs[0], STREAM_SAMPLE_EVENT_6);
+							assert.deepEqual(docs[1], STREAM_SAMPLE_EVENT_5);
+						});
+					});
 				});
 			});
 
@@ -714,6 +822,47 @@ const SAMPLE_EVENT4_NOT_DISPATCHED: CommitData = {
 		{
 			"_t" : "MyEventX",
 			"Field1" : "Y"
+		}
+	]
+};
+
+const STEAM_SAMPLE_ID = "50000005-5005-5005-5005-500000000005";
+const STREAM_SAMPLE_EVENT_5: CommitData = {
+	_id : 5,
+	StreamId : STEAM_SAMPLE_ID,
+	StreamRevisionStart : 0,
+	StreamRevisionEnd : 1,
+	Dispatched : true,
+	Events : [
+		{
+			_t : "MyEventA",
+			Field1 : "A"
+		}
+	]
+};
+const STREAM_SAMPLE_EVENT_6: CommitData = {
+	_id : 6,
+	StreamId : STEAM_SAMPLE_ID,
+	StreamRevisionStart : 1,
+	StreamRevisionEnd : 2,
+	Dispatched : true,
+	Events : [
+		{
+			"_t" : "MyEventA",
+			"Field1" : "A"
+		}
+	]
+};
+const STREAM_SAMPLE_EVENT_7: CommitData = {
+	_id : 7,
+	StreamId : STEAM_SAMPLE_ID,
+	StreamRevisionStart : 2,
+	StreamRevisionEnd : 3,
+	Dispatched : true,
+	Events : [
+		{
+			"_t" : "MyEventX",
+			"Field1" : "X"
 		}
 	]
 };

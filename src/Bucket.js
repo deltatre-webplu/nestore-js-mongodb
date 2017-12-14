@@ -124,7 +124,7 @@ class Bucket {
     }
     lastCommit(filters, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            const docs = yield this._getCommitsCursor(filters, options, { _id: -1 })
+            const docs = yield this._getCommitsCursor(filters, Object.assign({}, options, { sortDirection: -1 }))
                 .limit(1)
                 .toArray();
             if (docs.length) {
@@ -158,10 +158,14 @@ class Bucket {
             return lastCommit.StreamRevisionEnd;
         });
     }
-    _getCommitsCursor(filters, options, sort) {
+    _getCommitsCursor(filters, options) {
         filters = filters || {};
         options = options || {};
-        sort = sort || { _id: 1 };
+        if (filters.fromStreamRevision && !filters.streamId) {
+            throw new Error("Cannot use fromStreamRevision without a streamId");
+        }
+        const sortDirection = options.sortDirection || 1;
+        const sort = { _id: sortDirection };
         const mongoFilters = {};
         const eFilters = filters.eventFilters;
         if (eFilters) {
@@ -185,13 +189,32 @@ class Bucket {
         if (filters.streamId) {
             mongoFilters.StreamId = mongoHelpers_1.MongoHelpers.stringToBinaryUUID(filters.streamId);
         }
-        if (filters.fromBucketRevision || filters.toBucketRevision) {
-            mongoFilters._id = {};
-            if (filters.fromBucketRevision) {
-                mongoFilters._id.$gte = filters.fromBucketRevision;
+        if (sortDirection === 1) {
+            if (filters.fromBucketRevision || filters.toBucketRevision) {
+                mongoFilters._id = {};
+                if (filters.fromBucketRevision) {
+                    mongoFilters._id.$gte = filters.fromBucketRevision;
+                }
+                if (filters.toBucketRevision) {
+                    mongoFilters._id.$lte = filters.toBucketRevision;
+                }
             }
-            if (filters.toBucketRevision) {
-                mongoFilters._id.$lte = filters.toBucketRevision;
+            if (filters.fromStreamRevision) {
+                mongoFilters.StreamRevisionStart = { $gte: filters.fromStreamRevision };
+            }
+        }
+        else {
+            if (filters.fromBucketRevision || filters.toBucketRevision) {
+                mongoFilters._id = {};
+                if (filters.fromBucketRevision) {
+                    mongoFilters._id.$lte = filters.fromBucketRevision;
+                }
+                if (filters.toBucketRevision) {
+                    mongoFilters._id.$gte = filters.toBucketRevision;
+                }
+            }
+            if (filters.fromStreamRevision) {
+                mongoFilters.StreamRevisionStart = { $lte: filters.fromStreamRevision };
             }
         }
         debug("_getCommitsCursor", mongoFilters);
@@ -203,6 +226,9 @@ class Bucket {
         }
         if (options.batchSize) {
             cursor = cursor.batchSize(options.batchSize);
+        }
+        if (options.limit) {
+            cursor = cursor.limit(options.limit);
         }
         return cursor;
     }

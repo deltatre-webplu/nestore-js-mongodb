@@ -4,9 +4,16 @@ import {EventStore} from "./EventStore";
 import {Readable as ReadableStream} from "stream";
 import {Collection as MongoCollection, Cursor as MongoCursor} from "mongodb";
 
-import {WriteResult, WriteOptions, CommitsFilters, CommitsOptions, CommitData,
-	ProjectionStreamOptions, MongoDbCommit,
-	ConcurrencyError, UndispatchedEventsFoundError} from "./nestore-types";
+import {WriteResult,
+	WriteOptions,
+	CommitsFilters,
+	CommitsOptions,
+	CommitData,
+	ProjectionStreamOptions,
+	MongoDbCommit,
+	ConcurrencyError,
+	UndispatchedEventsFoundError,
+	SortableCommitsOptions} from "./nestore-types";
 import {MongoHelpers} from "./mongoHelpers";
 import * as uuid from "uuid";
 
@@ -122,14 +129,14 @@ export class Bucket {
 		return MongoHelpers.mongoDocToCommitData(doc);
 	}
 
-	getCommitsStream(filters?: CommitsFilters, options?: CommitsOptions): ReadableStream {
+	getCommitsStream(filters?: CommitsFilters, options?: SortableCommitsOptions): ReadableStream {
 		return this._getCommitsCursor(filters, options)
 		.stream({
 			transform: MongoHelpers.mongoDocToCommitData
 		});
 	}
 
-	async getCommitsArray(filters?: CommitsFilters, options?: CommitsOptions): Promise<CommitData[]> {
+	async getCommitsArray(filters?: CommitsFilters, options?: SortableCommitsOptions): Promise<CommitData[]> {
 		const docs = await this._getCommitsCursor(filters, options)
 		.toArray();
 
@@ -145,7 +152,7 @@ export class Bucket {
 	}
 
 	async lastCommit(filters?: CommitsFilters, options?: CommitsOptions): Promise<CommitData | undefined> {
-		const docs = await this._getCommitsCursor(filters, options, { _id : -1 })
+		const docs = await this._getCommitsCursor(filters, {...options, sortDirection: -1})
 		.limit(1)
 		.toArray();
 
@@ -187,10 +194,16 @@ export class Bucket {
 		return lastCommit.StreamRevisionEnd;
 	}
 
-	_getCommitsCursor(filters?: CommitsFilters, options?: CommitsOptions, sort?: any): MongoCursor<MongoDbCommit> {
+	_getCommitsCursor(filters?: CommitsFilters, options?: SortableCommitsOptions): MongoCursor<MongoDbCommit> {
 		filters = filters || {};
 		options = options || {};
-		sort = sort || { _id : 1 };
+
+		if (filters.fromStreamRevision && !filters.streamId) {
+			throw new Error("Cannot use fromStreamRevision without a streamId");
+		}
+
+		const sortDirection = options.sortDirection || 1;
+		const sort = { _id : sortDirection };
 
 		const mongoFilters: any = {};
 
@@ -215,13 +228,33 @@ export class Bucket {
 		if (filters.streamId) {
 			mongoFilters.StreamId = MongoHelpers.stringToBinaryUUID(filters.streamId);
 		}
-		if (filters.fromBucketRevision || filters.toBucketRevision) {
-			mongoFilters._id = {};
-			if (filters.fromBucketRevision) {
-				mongoFilters._id.$gte = filters.fromBucketRevision;
+		if (sortDirection === 1) {
+			if (filters.fromBucketRevision || filters.toBucketRevision) {
+				mongoFilters._id = {};
+				if (filters.fromBucketRevision) {
+					mongoFilters._id.$gte = filters.fromBucketRevision;
+				}
+				if (filters.toBucketRevision) {
+					mongoFilters._id.$lte = filters.toBucketRevision;
+				}
 			}
-			if (filters.toBucketRevision) {
-				mongoFilters._id.$lte = filters.toBucketRevision;
+
+			if (filters.fromStreamRevision) {
+				mongoFilters.StreamRevisionStart = { $gte: filters.fromStreamRevision };
+			}
+		} else {
+			if (filters.fromBucketRevision || filters.toBucketRevision) {
+				mongoFilters._id = {};
+				if (filters.fromBucketRevision) {
+					mongoFilters._id.$lte = filters.fromBucketRevision;
+				}
+				if (filters.toBucketRevision) {
+					mongoFilters._id.$gte = filters.toBucketRevision;
+				}
+			}
+
+			if (filters.fromStreamRevision) {
+				mongoFilters.StreamRevisionStart = { $lte: filters.fromStreamRevision };
 			}
 		}
 
@@ -237,6 +270,10 @@ export class Bucket {
 
 		if (options.batchSize) {
 			cursor = cursor.batchSize(options.batchSize);
+		}
+
+		if (options.limit) {
+			cursor = cursor.limit(options.limit);
 		}
 
 		return cursor;
