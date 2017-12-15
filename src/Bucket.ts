@@ -198,10 +198,6 @@ export class Bucket {
 		filters = filters || {};
 		options = options || {};
 
-		if (filters.fromStreamRevision && !filters.streamId) {
-			throw new Error("Cannot use fromStreamRevision without a streamId");
-		}
-
 		const sortDirection = options.sortDirection || 1;
 		const sort = { _id : sortDirection };
 
@@ -238,10 +234,6 @@ export class Bucket {
 					mongoFilters._id.$lte = filters.toBucketRevision;
 				}
 			}
-
-			if (filters.fromStreamRevision) {
-				mongoFilters.StreamRevisionStart = { $gte: filters.fromStreamRevision };
-			}
 		} else {
 			if (filters.fromBucketRevision || filters.toBucketRevision) {
 				mongoFilters._id = {};
@@ -251,10 +243,6 @@ export class Bucket {
 				if (filters.toBucketRevision) {
 					mongoFilters._id.$gte = filters.toBucketRevision;
 				}
-			}
-
-			if (filters.fromStreamRevision) {
-				mongoFilters.StreamRevisionStart = { $lte: filters.fromStreamRevision };
 			}
 		}
 

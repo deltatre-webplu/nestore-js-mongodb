@@ -556,17 +556,6 @@ describe("EventStore", function () {
                         chai_1.assert.deepEqual(docs[1], SAMPLE_EVENT2);
                     });
                 });
-                it("should not be possible to filter by stream revision without a stream id", function () {
-                    return __awaiter(this, void 0, void 0, function* () {
-                        try {
-                            yield bucket.getCommitsArray({ fromStreamRevision: 1 });
-                        }
-                        catch (err) {
-                            return;
-                        }
-                        throw new Error("Rejection expected");
-                    });
-                });
                 it("should be possible to read 1 commits using limit ascending", function () {
                     return bucket.getCommitsArray({}, { sortDirection: 1, limit: 1 })
                         .then((docs) => {
@@ -643,16 +632,16 @@ describe("EventStore", function () {
                             yield insertSampleBucket([STREAM_SAMPLE_EVENT_5, STREAM_SAMPLE_EVENT_6, STREAM_SAMPLE_EVENT_7]);
                         });
                     });
-                    it("should be possible to read 2 commits filtering by stream revision ascending", function () {
-                        return bucket.getCommitsArray({ fromStreamRevision: 1, streamId: STEAM_SAMPLE_ID }, { limit: 2, sortDirection: 1 })
+                    it("should be possible to read 2 commits filtering by bucket revision ascending", function () {
+                        return bucket.getCommitsArray({ fromBucketRevision: 6, streamId: STEAM_SAMPLE_ID }, { limit: 2, sortDirection: 1 })
                             .then((docs) => {
                             chai_1.assert.equal(docs.length, 2);
                             chai_1.assert.deepEqual(docs[0], STREAM_SAMPLE_EVENT_6);
                             chai_1.assert.deepEqual(docs[1], STREAM_SAMPLE_EVENT_7);
                         });
                     });
-                    it("should be possible to read 2 commits filtering by stream revision descending", function () {
-                        return bucket.getCommitsArray({ fromStreamRevision: 1, streamId: STEAM_SAMPLE_ID }, { limit: 2, sortDirection: -1 })
+                    it("should be possible to read 2 commits filtering by bucket revision descending", function () {
+                        return bucket.getCommitsArray({ fromBucketRevision: 6, streamId: STEAM_SAMPLE_ID }, { limit: 2, sortDirection: -1 })
                             .then((docs) => {
                             chai_1.assert.equal(docs.length, 2);
                             chai_1.assert.deepEqual(docs[0], STREAM_SAMPLE_EVENT_6);

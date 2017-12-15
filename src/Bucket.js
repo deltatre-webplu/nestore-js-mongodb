@@ -161,9 +161,6 @@ class Bucket {
     _getCommitsCursor(filters, options) {
         filters = filters || {};
         options = options || {};
-        if (filters.fromStreamRevision && !filters.streamId) {
-            throw new Error("Cannot use fromStreamRevision without a streamId");
-        }
         const sortDirection = options.sortDirection || 1;
         const sort = { _id: sortDirection };
         const mongoFilters = {};
@@ -199,9 +196,6 @@ class Bucket {
                     mongoFilters._id.$lte = filters.toBucketRevision;
                 }
             }
-            if (filters.fromStreamRevision) {
-                mongoFilters.StreamRevisionStart = { $gte: filters.fromStreamRevision };
-            }
         }
         else {
             if (filters.fromBucketRevision || filters.toBucketRevision) {
@@ -212,9 +206,6 @@ class Bucket {
                 if (filters.toBucketRevision) {
                     mongoFilters._id.$gte = filters.toBucketRevision;
                 }
-            }
-            if (filters.fromStreamRevision) {
-                mongoFilters.StreamRevisionStart = { $lte: filters.fromStreamRevision };
             }
         }
         debug("_getCommitsCursor", mongoFilters);

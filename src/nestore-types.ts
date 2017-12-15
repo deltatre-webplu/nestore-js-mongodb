@@ -6,7 +6,6 @@ export interface CommitsFilters {
 	streamId?: string;
 	fromBucketRevision?: number;
 	toBucketRevision?: number;
-	fromStreamRevision?: number;
 }
 
 export interface CommitsOptions {
