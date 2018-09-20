@@ -22,7 +22,7 @@ export declare class ProjectionStream extends ReadableStream {
     }) => void): this;
     pause(): this;
     _read(): void;
-    private _startTimer(interval?);
-    private _stopTimer();
-    private _loadNextStream();
+    private _startTimer;
+    private _stopTimer;
+    private _loadNextStream;
 }

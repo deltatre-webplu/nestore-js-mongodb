@@ -81,7 +81,7 @@ class ProjectionStream extends stream_1.Readable {
             this.source = sourceCursor;
             sourceCursor
                 .on("data", (doc) => {
-                if (doc._id > lastBucketRevision) {
+                if (doc._id > lastBucketRevision) { // if read doc contains new commits update lastBucketRevision
                     lastBucketRevision = doc._id;
                 }
                 const commit = mongoHelpers_1.MongoHelpers.mongoDocToCommitData(doc);

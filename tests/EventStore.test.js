@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const chai_1 = require("chai");
-const index_1 = require("../index");
+const index_1 = require("../src/index");
 const mongodb = require("mongodb");
 const config = require("./config.json"); // tslint:disable-line
 describe("EventStore", function () {
@@ -340,7 +340,7 @@ describe("EventStore", function () {
                         projection
                             .on("data", (doc) => {
                             docs.push(doc);
-                            if (doc._id === 3) {
+                            if (doc._id === 3) { // when last event is read close the projection
                                 projection.close();
                             }
                         })
@@ -370,7 +370,7 @@ describe("EventStore", function () {
                         projection
                             .on("data", (doc) => {
                             docs.push(doc);
-                            if (doc._id === 4) {
+                            if (doc._id === 4) { // when last event is read close the projection
                                 projection.close();
                             }
                         })
@@ -407,7 +407,7 @@ describe("EventStore", function () {
                         projection
                             .on("data", (doc) => {
                             docs.push(doc);
-                            if (doc._id === 4) {
+                            if (doc._id === 4) { // when last event is read close the projection
                                 projection.close();
                             }
                         })
@@ -660,7 +660,7 @@ describe("EventStore", function () {
                             projection
                                 .on("data", (doc) => {
                                 totals += doc.Events[0].value;
-                                if (doc._id === 10) {
+                                if (doc._id === 10) { // when last event is read close the projection
                                     projection.close();
                                 }
                             })

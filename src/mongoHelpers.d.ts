@@ -1,14 +1,20 @@
 import { Long as MongoDbLong, Binary as MongoDbBinary } from "mongodb";
 import { CommitData, MongoDbCommit } from "./nestore-types";
+declare function stringToBinaryUUID(value: string): MongoDbBinary;
+declare function binaryUUIDToString(value: MongoDbBinary): string;
+declare function binaryCSUUIDToString(value: MongoDbBinary): string;
+declare function intToLong(value: number): MongoDbLong;
+declare function mongoDocToCommitData(doc: undefined): undefined;
+declare function mongoDocToCommitData(doc: MongoDbCommit): CommitData;
+declare function commitDataToMongoDoc(commit?: CommitData): MongoDbCommit | undefined;
+declare function isDuplicateError(err: any): boolean;
 export declare const MongoHelpers: {
-    stringToBinaryUUID: (value: string) => MongoDbBinary;
-    binaryUUIDToString: (value: MongoDbBinary) => string;
-    binaryCSUUIDToString: (value: MongoDbBinary) => string;
-    intToLong: (value: number) => MongoDbLong;
-    mongoDocToCommitData: {
-        (doc: undefined): undefined;
-        (doc: MongoDbCommit): CommitData;
-    };
-    commitDataToMongoDoc: (commit?: CommitData | undefined) => MongoDbCommit | undefined;
-    isDuplicateError: (err: any) => boolean;
+    stringToBinaryUUID: typeof stringToBinaryUUID;
+    binaryUUIDToString: typeof binaryUUIDToString;
+    binaryCSUUIDToString: typeof binaryCSUUIDToString;
+    intToLong: typeof intToLong;
+    mongoDocToCommitData: typeof mongoDocToCommitData;
+    commitDataToMongoDoc: typeof commitDataToMongoDoc;
+    isDuplicateError: typeof isDuplicateError;
 };
+export {};

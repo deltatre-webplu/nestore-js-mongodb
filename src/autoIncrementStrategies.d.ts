@@ -8,5 +8,5 @@ export declare class IncrementCountersStrategy implements AutoIncrementStrategy 
     private collection;
     constructor(eventStore: EventStore);
     increment(bucketName: string, lastCommit?: CommitData): Promise<number>;
-    private createCounterAsync(counter);
+    private createCounterAsync;
 }

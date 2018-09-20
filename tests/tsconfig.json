@@ -3,19 +3,19 @@
         "target": "es2015",
         "module": "commonjs",
         "moduleResolution": "node",
-
         "strict": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
-    
         "declaration": true,
         "sourceMap": true,
-        
-        "types":["mocha"]
+        "types": [
+            "node",
+            "mocha"
+        ]
     },
     "exclude": [
         "**/*.d.ts",
-        "node_modules"
+        "../node_modules"
     ],
     "compileOnSave": true
 }

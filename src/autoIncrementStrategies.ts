@@ -1,15 +1,15 @@
-import {Collection as MongoCollection} from "mongodb";
-import {MongoHelpers} from "./mongoHelpers";
+import { Collection as MongoCollection } from "mongodb";
+import { MongoHelpers } from "./mongoHelpers";
 
-import {CommitData} from "./nestore-types";
-import {EventStore} from "./EventStore";
+import { CommitData } from "./nestore-types";
+import { EventStore } from "./EventStore";
 
 export interface AutoIncrementStrategy {
 	increment(bucketName: string, lastCommit?: CommitData): Promise<number>;
 }
 
 export class IncrementCountersStrategy implements AutoIncrementStrategy {
-	private collection: MongoCollection;
+	private collection!: MongoCollection;
 
 	constructor(private eventStore: EventStore) {
 	}
@@ -25,14 +25,14 @@ export class IncrementCountersStrategy implements AutoIncrementStrategy {
 		}
 
 		const result = await this.collection
-		.findOneAndUpdate(
-			{ _id: bucketName },
-			{ $inc: { BucketRevision: 1 }},
-			{
-				returnOriginal: false,
-				upsert: false
-			}
-		);
+			.findOneAndUpdate(
+				{ _id: bucketName },
+				{ $inc: { BucketRevision: 1 } },
+				{
+					returnOriginal: false,
+					upsert: false
+				}
+			);
 
 		// If found
 		if (result.value) {

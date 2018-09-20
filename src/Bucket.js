@@ -171,13 +171,13 @@ class Bucket {
                 mongoFilters["Events." + name] = eFilters[name];
             });
         }
-        if (!filters.hasOwnProperty("dispatched")) {
+        if (!filters.hasOwnProperty("dispatched")) { // by default returns only dispatched
             mongoFilters.Dispatched = true;
         }
-        else if (filters.dispatched === 0) {
+        else if (filters.dispatched === 0) { // returns only undispatched
             mongoFilters.Dispatched = false;
         }
-        else if (filters.dispatched === 1) {
+        else if (filters.dispatched === 1) { // returns only dispatched
             mongoFilters.Dispatched = true;
         }
         else if (filters.dispatched === -1) {

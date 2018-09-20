@@ -21,5 +21,5 @@ export declare class Bucket {
     updateCommit(id: number, events: any[]): Promise<CommitData | undefined>;
     streamRevision(streamId: string): Promise<number>;
     _getCommitsCursor(filters?: CommitsFilters, options?: SortableCommitsOptions): MongoCursor<MongoDbCommit>;
-    private createCommit(streamId, expectedStreamRevision, events, dispatched, lastCommit?);
+    private createCommit;
 }
