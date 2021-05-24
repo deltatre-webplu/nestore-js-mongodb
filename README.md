@@ -56,7 +56,6 @@ Connect to the store only at the start of your application and disconnect at the
 
     doWork();
 
-
 See `./samples` for more usage examples.
 
 ### bucket.write
@@ -68,7 +67,6 @@ Write new events
       expectedStreamRevision: number,
       events: any[],
       options: WriteOptions = { dispatched: false }): Promise<WriteResult>
-
 
 ### bucket.getCommitById
 
@@ -84,10 +82,6 @@ Get a commit by id.
 
     bucket.getCommitsArray(filters?: CommitsFilters, options?: CommitsOptions): Promise<CommitData[]>
 
-### bucket.projectionStream
-
-    bucket.projectionStream(filters?: CommitsFilters, options?: ProjectionStreamOptions): ProjectionStream
-
 ### bucket.lastCommit
 
     bucket.lastCommit(filters?: CommitsFilters, options?: CommitsOptions): Promise<CommitData | undefined>
@@ -99,4 +93,3 @@ Get a commit by id.
 ### bucket.streamRevision
 
     bucket.streamRevision(streamId: string): Promise<number>
-

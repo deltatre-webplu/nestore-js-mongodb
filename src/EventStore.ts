@@ -1,47 +1,62 @@
-import {MongoClient, MongoClientOptions, Db as MongoDatabase, Collection as MongoCollection} from "mongodb";
-import {Bucket} from "./Bucket";
-import {AutoIncrementStrategy, IncrementCountersStrategy} from "./autoIncrementStrategies";
+import { MongoClient, MongoClientOptions, Db, Collection } from "mongodb";
+import { Bucket } from "./Bucket";
+import {
+  AutoIncrementStrategy,
+  IncrementCountersStrategy,
+} from "./autoIncrementStrategies";
 
 export interface EventStoreOptions {
-	url: string;
-	connectOptions?: MongoClientOptions;
+  url: string;
+  connectOptions?: MongoClientOptions;
 }
 
 export class EventStore {
-	db: MongoDatabase | undefined;
-	autoIncrementStrategy: AutoIncrementStrategy;
+  private client: MongoClient;
+  db: Db | undefined;
+  autoIncrementStrategy: AutoIncrementStrategy;
 
-	constructor(private options: EventStoreOptions) {
-		this.autoIncrementStrategy = new IncrementCountersStrategy(this);
-	}
+  constructor(options: EventStoreOptions) {
+    this.client = new MongoClient(options.url, {
+      ...options.connectOptions,
+      useUnifiedTopology: true,
+    });
 
-	async connect(): Promise<EventStore> {
-		this.db = await MongoClient.connect(this.options.url, this.options.connectOptions);
+    this.autoIncrementStrategy = new IncrementCountersStrategy(this);
+  }
 
-		return this;
-	}
+  async connect(): Promise<EventStore> {
+    if (!this.client.isConnected()) {
+      await this.client.connect();
 
-	async close(): Promise<void> {
-		if (this.db) {
-			await this.db.close();
-			this.db = undefined;
-		}
-	}
+      if (!this.db) {
+        this.db = this.client.db();
+      }
+    }
 
-	bucket(bucketName: string) {
-		if (!this.db) {
-			throw new Error("Event store not connected");
-		}
+    return this;
+  }
 
-		return new Bucket(this, bucketName);
-	}
+  async close(): Promise<void> {
+    if (this.client.isConnected()) {
+      await this.client.close();
+      this.db = undefined;
+    }
+  }
 
-	mongoCollection(bucketName: string): MongoCollection {
-		if (!this.db) {
-			throw new Error("Event store not connected");
-		}
+  bucket(bucketName: string) {
+    if (!this.client.isConnected() || !this.db) {
+      throw new Error("Event store not connected");
+    }
 
-		const collectionName = `${bucketName}.commits`;
-		return this.db.collection(collectionName);
-	}
+    return new Bucket(this, bucketName);
+  }
+
+  mongoCollection(bucketName: string): Collection {
+    if (!this.client.isConnected() || !this.db) {
+      throw new Error("Event store not connected");
+    }
+
+    const collectionName = `${bucketName}.commits`;
+    return this.db.collection(collectionName);
+  }
 }

@@ -10,7 +10,7 @@ export declare class ProjectionStream extends ReadableStream {
     private source;
     private timeoutObj;
     constructor(bucket: Bucket, filters: CommitsFilters, options: ProjectionStreamOptions);
-    close(): Promise<any>;
+    close(): Promise<void> | Promise<import("mongodb").CursorResult>;
     isClosed(): boolean;
     resume(): this;
     on(event: "close" | "end" | "readable", listener: () => void): this;
@@ -20,6 +20,8 @@ export declare class ProjectionStream extends ReadableStream {
     on(event: "wait", listener: (info: {
         filters: CommitsFilters;
     }) => void): this;
+    on(event: "resume", listener: () => void): this;
+    on(event: "pause", listener: () => void): this;
     pause(): this;
     _read(): void;
     private _startTimer;

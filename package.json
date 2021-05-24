@@ -5,10 +5,12 @@
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
-    "src-build": "tsc -p ./src/",
-    "src-build-w": "tsc -w -p ./src/",
+    "build": "tsc",
+    "build:watch": "tsc -w -p ./src/",
+    "build:test": "tsc -p ./tests",
+    "build:test:watch": "tsc -w -p ./tests",
     "develop": "npm run src-build-w",
-    "test": "tsc -p ./tests & mocha ./tests/",
+    "test": "mocha ./tests/",
     "mongod": "mongod --dbpath ./mongo-data --logpath ./mongo-data/mongod.log --nojournal --logRotate reopen --logappend",
     "prepublish": "npm run src-build"
   },
@@ -24,21 +26,21 @@
   "homepage": "https://github.com/deltatre-webplu/nestore-js-mongodb#readme",
   "dependencies": {
     "debug": "3.1.0",
-    "mongodb": "2.2.33",
+    "mongodb": "^3.6.8",
     "uuid": "3.1.0"
   },
   "devDependencies": {
     "@types/chai": "4.0.4",
-    "@types/mocha": "2.2.44",
     "@types/debug": "0.0.30",
-    "@types/mongodb": "2.2.15",
-    "@types/node": "8.0.51",
+    "@types/mocha": "2.2.44",
+    "@types/mongodb": "^3.6.16",
+    "@types/node": "14.14.31",
     "@types/uuid": "3.4.3",
     "chai": "4.1.2",
     "mocha": "4.0.1",
     "progress-logger-js": "0.5.0",
     "tslint": "5.8.0",
-    "typescript": "3.0.3"
+    "typescript": "3.6.5"
   },
   "files": [
     "/lib"

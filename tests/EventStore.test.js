@@ -1,24 +1,23 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const chai_1 = require("chai");
 const index_1 = require("../src/index");
-const mongodb = require("mongodb");
+const mongodb_1 = require("mongodb");
 const config = require("./config.json"); // tslint:disable-line
 describe("EventStore", function () {
     this.slow(500);
     this.timeout(20000);
-    before(function () {
-    });
-    after(function () {
-    });
+    before(function () { });
+    after(function () { });
     describe("When connected", function () {
         let eventStore;
         beforeEach(function () {
@@ -112,7 +111,7 @@ describe("EventStore", function () {
                             Events: ["e1"],
                             StreamId: bucket.randomStreamId(),
                             StreamRevisionStart: 1,
-                            StreamRevisionEnd: 2
+                            StreamRevisionEnd: 2,
                         };
                         let revision = yield eventStore.autoIncrementStrategy.increment(SAMPLE_BUCKETNAME, lastCommit);
                         chai_1.assert.equal(revision, 264);
@@ -129,7 +128,9 @@ describe("EventStore", function () {
                         const invalidStreamIds = [undefined, null, ""];
                         for (const streamId of invalidStreamIds) {
                             try {
-                                yield bucket.write(streamId, 0, [""], { dispatched: true });
+                                yield bucket.write(streamId, 0, [""], {
+                                    dispatched: true,
+                                });
                             }
                             catch (err) {
                                 // error expected
@@ -144,7 +145,9 @@ describe("EventStore", function () {
                     return __awaiter(this, void 0, void 0, function* () {
                         const streamRevision = -1;
                         try {
-                            yield bucket.write(bucket.randomStreamId(), streamRevision, [""], { dispatched: true });
+                            yield bucket.write(bucket.randomStreamId(), streamRevision, [""], {
+                                dispatched: true,
+                            });
                         }
                         catch (err) {
                             // error expected
@@ -158,7 +161,9 @@ describe("EventStore", function () {
                     return __awaiter(this, void 0, void 0, function* () {
                         const streamRevision = 0;
                         try {
-                            yield bucket.write(bucket.randomStreamId(), streamRevision, [], { dispatched: true });
+                            yield bucket.write(bucket.randomStreamId(), streamRevision, [], {
+                                dispatched: true,
+                            });
                         }
                         catch (err) {
                             // error expected
@@ -171,14 +176,20 @@ describe("EventStore", function () {
                 describe("Write commits with existing data", function () {
                     beforeEach(function () {
                         return __awaiter(this, void 0, void 0, function* () {
-                            yield insertSampleBucket([SAMPLE_EVENT2, SAMPLE_EVENT3, SAMPLE_EVENT1]);
+                            yield insertSampleBucket([
+                                SAMPLE_EVENT2,
+                                SAMPLE_EVENT3,
+                                SAMPLE_EVENT1,
+                            ]);
                         });
                     });
                     it("cannot write a commit with an old stream revision", function () {
                         return __awaiter(this, void 0, void 0, function* () {
                             const streamRevision = 0;
                             try {
-                                yield bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""], { dispatched: true });
+                                yield bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""], {
+                                    dispatched: true,
+                                });
                             }
                             catch (err) {
                                 // error expected
@@ -194,7 +205,9 @@ describe("EventStore", function () {
                         return __awaiter(this, void 0, void 0, function* () {
                             const streamRevision = 2;
                             try {
-                                yield bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""], { dispatched: true });
+                                yield bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""], {
+                                    dispatched: true,
+                                });
                             }
                             catch (err) {
                                 // error expected
@@ -210,7 +223,9 @@ describe("EventStore", function () {
                         return __awaiter(this, void 0, void 0, function* () {
                             const streamRevision = 4;
                             try {
-                                yield bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""], { dispatched: true });
+                                yield bucket.write(SAMPLE_EVENT1.StreamId, streamRevision, [""], {
+                                    dispatched: true,
+                                });
                             }
                             catch (err) {
                                 // error expected
@@ -292,7 +307,11 @@ describe("EventStore", function () {
             describe("Read commits", function () {
                 beforeEach(function () {
                     return __awaiter(this, void 0, void 0, function* () {
-                        yield insertSampleBucket([SAMPLE_EVENT2, SAMPLE_EVENT3, SAMPLE_EVENT1]);
+                        yield insertSampleBucket([
+                            SAMPLE_EVENT2,
+                            SAMPLE_EVENT3,
+                            SAMPLE_EVENT1,
+                        ]);
                     });
                 });
                 it("should be possible to read commits as stream (default ascending)", function () {
@@ -306,8 +325,7 @@ describe("EventStore", function () {
                             .on("end", () => {
                             resolve();
                         });
-                    })
-                        .then(() => {
+                    }).then(() => {
                         chai_1.assert.equal(docs.length, 3);
                         chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT1);
                         chai_1.assert.deepEqual(docs[1], SAMPLE_EVENT2);
@@ -325,8 +343,7 @@ describe("EventStore", function () {
                             .on("end", () => {
                             resolve();
                         });
-                    })
-                        .then(() => {
+                    }).then(() => {
                         chai_1.assert.equal(docs.length, 3);
                         chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT3);
                         chai_1.assert.deepEqual(docs[1], SAMPLE_EVENT2);
@@ -340,7 +357,8 @@ describe("EventStore", function () {
                         projection
                             .on("data", (doc) => {
                             docs.push(doc);
-                            if (doc._id === 3) { // when last event is read close the projection
+                            if (doc._id === 3) {
+                                // when last event is read close the projection
                                 projection.close();
                             }
                         })
@@ -354,8 +372,7 @@ describe("EventStore", function () {
                             .on("end", () => {
                             reject(new Error("end should never be called"));
                         });
-                    })
-                        .then(() => {
+                    }).then(() => {
                         chai_1.assert.equal(docs.length, 3);
                         chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT1);
                         chai_1.assert.deepEqual(docs[1], SAMPLE_EVENT2);
@@ -370,11 +387,13 @@ describe("EventStore", function () {
                         projection
                             .on("data", (doc) => {
                             docs.push(doc);
-                            if (doc._id === 4) { // when last event is read close the projection
+                            if (doc._id === 4) {
+                                // when last event is read close the projection
                                 projection.close();
                             }
                         })
                             .on("wait", (data) => {
+                            // when first stream is completed add a new commit
                             waitCalls++;
                             chai_1.assert.equal(data.filters.fromBucketRevision, 4);
                             insertSampleBucket([SAMPLE_EVENT4]);
@@ -389,8 +408,7 @@ describe("EventStore", function () {
                             .on("end", () => {
                             reject(new Error("end should never be called"));
                         });
-                    })
-                        .then(() => {
+                    }).then(() => {
                         chai_1.assert.equal(waitCalls, 1);
                         chai_1.assert.equal(docs.length, 4);
                         chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT1);
@@ -407,11 +425,13 @@ describe("EventStore", function () {
                         projection
                             .on("data", (doc) => {
                             docs.push(doc);
-                            if (doc._id === 4) { // when last event is read close the projection
+                            if (doc._id === 4) {
+                                // when last event is read close the projection
                                 projection.close();
                             }
                         })
                             .on("wait", (data) => {
+                            // when first stream is completed add a new commit
                             waitCalls++;
                             chai_1.assert.equal(data.filters.fromBucketRevision, 4); // check that the next stream will start from 4
                             insertSampleBucket([SAMPLE_EVENT4]);
@@ -426,36 +446,37 @@ describe("EventStore", function () {
                             .on("end", () => {
                             reject(new Error("end should never be called"));
                         });
-                    })
-                        .then(() => {
+                    }).then(() => {
                         chai_1.assert.equal(waitCalls, 1);
                         chai_1.assert.equal(docs.length, 1);
                         chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT4);
                     });
                 });
                 it("should be possible to create a projection and close it multiple times", function () {
-                    const projection = bucket.projectionStream({}, { waitInterval: 100 });
-                    const projectionChecks = new Promise((resolve, reject) => {
-                        projection
-                            .on("error", (err) => {
-                            projection.close();
-                            reject(err);
-                        })
-                            .on("close", () => {
-                            resolve();
-                        })
-                            .on("end", () => {
-                            reject(new Error("end should never be called"));
+                    return __awaiter(this, void 0, void 0, function* () {
+                        const projection = bucket.projectionStream({}, { waitInterval: 100 });
+                        const projectionChecks = new Promise((resolve, reject) => {
+                            projection
+                                .on("error", (err) => {
+                                projection.close();
+                                reject(err);
+                            })
+                                .on("close", () => {
+                                resolve();
+                            })
+                                .on("end", () => {
+                                reject(new Error("end should never be called"));
+                            });
                         });
+                        yield projection.close();
+                        yield projection.close();
+                        yield projection.close();
+                        yield projection.close();
+                        yield projectionChecks;
                     });
-                    return projection.close()
-                        .then(() => projection.close())
-                        .then(() => projection.close())
-                        .then(() => projectionChecks);
                 });
                 it("should be possible to read commits as array (default ascending)", function () {
-                    return bucket.getCommitsArray()
-                        .then((docs) => {
+                    return bucket.getCommitsArray().then((docs) => {
                         chai_1.assert.equal(docs.length, 3);
                         chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT1);
                         chai_1.assert.deepEqual(docs[1], SAMPLE_EVENT2);
@@ -463,7 +484,8 @@ describe("EventStore", function () {
                     });
                 });
                 it("should be possible to read commits as array ascending", function () {
-                    return bucket.getCommitsArray(undefined, { sortDirection: 1 })
+                    return bucket
+                        .getCommitsArray(undefined, { sortDirection: 1 })
                         .then((docs) => {
                         chai_1.assert.equal(docs.length, 3);
                         chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT1);
@@ -472,7 +494,8 @@ describe("EventStore", function () {
                     });
                 });
                 it("should be possible to read commits as array descending", function () {
-                    return bucket.getCommitsArray(undefined, { sortDirection: -1 })
+                    return bucket
+                        .getCommitsArray(undefined, { sortDirection: -1 })
                         .then((docs) => {
                         chai_1.assert.equal(docs.length, 3);
                         chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT3);
@@ -481,7 +504,10 @@ describe("EventStore", function () {
                     });
                 });
                 it("should be possible to read commits using read preference", function () {
-                    return bucket.getCommitsArray(undefined, { readPreference: mongodb.ReadPreference.SECONDARY_PREFERRED })
+                    return bucket
+                        .getCommitsArray(undefined, {
+                        readPreference: mongodb_1.ReadPreference.SECONDARY_PREFERRED,
+                    })
                         .then((docs) => {
                         chai_1.assert.equal(docs.length, 3);
                         chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT1);
@@ -490,8 +516,7 @@ describe("EventStore", function () {
                     });
                 });
                 it("should be possible to get last commit", function () {
-                    return bucket.lastCommit()
-                        .then((doc) => {
+                    return bucket.lastCommit().then((doc) => {
                         chai_1.assert.deepEqual(doc, SAMPLE_EVENT3);
                     });
                 });
@@ -525,8 +550,9 @@ describe("EventStore", function () {
                     });
                 });
                 it("should be possible to read commits filtering by event properties", function () {
-                    return bucket.getCommitsArray({
-                        eventFilters: { "Field1": "X" }
+                    return bucket
+                        .getCommitsArray({
+                        eventFilters: { Field1: "X" },
                     })
                         .then((docs) => {
                         chai_1.assert.equal(docs.length, 1);
@@ -534,14 +560,16 @@ describe("EventStore", function () {
                     });
                 });
                 it("should be possible to read commits filtering by bucket revision", function () {
-                    return bucket.getCommitsArray({ fromBucketRevision: 2, toBucketRevision: 2 })
+                    return bucket
+                        .getCommitsArray({ fromBucketRevision: 2, toBucketRevision: 2 })
                         .then((docs) => {
                         chai_1.assert.equal(docs.length, 1);
                         chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT2);
                     });
                 });
                 it("should be possible to read 2 commits filtering by bucket revision ascending", function () {
-                    return bucket.getCommitsArray({ fromBucketRevision: 2, toBucketRevision: 3 }, { sortDirection: 1 })
+                    return bucket
+                        .getCommitsArray({ fromBucketRevision: 2, toBucketRevision: 3 }, { sortDirection: 1 })
                         .then((docs) => {
                         chai_1.assert.equal(docs.length, 2);
                         chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT2);
@@ -549,7 +577,8 @@ describe("EventStore", function () {
                     });
                 });
                 it("should be possible to read 2 commits filtering by bucket revision descending", function () {
-                    return bucket.getCommitsArray({ fromBucketRevision: 3, toBucketRevision: 2 }, { sortDirection: -1 })
+                    return bucket
+                        .getCommitsArray({ fromBucketRevision: 3, toBucketRevision: 2 }, { sortDirection: -1 })
                         .then((docs) => {
                         chai_1.assert.equal(docs.length, 2);
                         chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT3);
@@ -557,21 +586,26 @@ describe("EventStore", function () {
                     });
                 });
                 it("should be possible to read 1 commits using limit ascending", function () {
-                    return bucket.getCommitsArray({}, { sortDirection: 1, limit: 1 })
+                    return bucket
+                        .getCommitsArray({}, { sortDirection: 1, limit: 1 })
                         .then((docs) => {
                         chai_1.assert.equal(docs.length, 1);
                         chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT1);
                     });
                 });
                 it("should be possible to read 1 commits using limit descending", function () {
-                    return bucket.getCommitsArray({}, { sortDirection: -1, limit: 1 })
+                    return bucket
+                        .getCommitsArray({}, { sortDirection: -1, limit: 1 })
                         .then((docs) => {
                         chai_1.assert.equal(docs.length, 1);
                         chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT3);
                     });
                 });
                 it("should be possible to read commits filtering by stream id", function () {
-                    return bucket.getCommitsArray({ streamId: "30000003-3003-3003-3003-300000000003" })
+                    return bucket
+                        .getCommitsArray({
+                        streamId: "30000003-3003-3003-3003-300000000003",
+                    })
                         .then((docs) => {
                         chai_1.assert.equal(docs.length, 1);
                         chai_1.assert.deepEqual(docs[0], SAMPLE_EVENT3);
@@ -592,10 +626,7 @@ describe("EventStore", function () {
                 it("should not be possible to update commit events with a different events number", function () {
                     return __awaiter(this, void 0, void 0, function* () {
                         // Clone events
-                        const newEvents = [
-                            ...SAMPLE_EVENT1.Events,
-                            ...SAMPLE_EVENT2.Events,
-                        ];
+                        const newEvents = [...SAMPLE_EVENT1.Events, ...SAMPLE_EVENT2.Events];
                         try {
                             yield bucket.updateCommit(SAMPLE_EVENT1._id, newEvents);
                             chai_1.assert.fail("Should throw an error");
@@ -629,11 +660,16 @@ describe("EventStore", function () {
                 describe("Read commits filtering by stream id", function () {
                     beforeEach(function () {
                         return __awaiter(this, void 0, void 0, function* () {
-                            yield insertSampleBucket([STREAM_SAMPLE_EVENT_5, STREAM_SAMPLE_EVENT_6, STREAM_SAMPLE_EVENT_7]);
+                            yield insertSampleBucket([
+                                STREAM_SAMPLE_EVENT_5,
+                                STREAM_SAMPLE_EVENT_6,
+                                STREAM_SAMPLE_EVENT_7,
+                            ]);
                         });
                     });
                     it("should be possible to read 2 commits filtering by bucket revision ascending", function () {
-                        return bucket.getCommitsArray({ fromBucketRevision: 6, streamId: STEAM_SAMPLE_ID }, { limit: 2, sortDirection: 1 })
+                        return bucket
+                            .getCommitsArray({ fromBucketRevision: 6, streamId: STEAM_SAMPLE_ID }, { limit: 2, sortDirection: 1 })
                             .then((docs) => {
                             chai_1.assert.equal(docs.length, 2);
                             chai_1.assert.deepEqual(docs[0], STREAM_SAMPLE_EVENT_6);
@@ -641,7 +677,8 @@ describe("EventStore", function () {
                         });
                     });
                     it("should be possible to read 2 commits filtering by bucket revision descending", function () {
-                        return bucket.getCommitsArray({ fromBucketRevision: 6, streamId: STEAM_SAMPLE_ID }, { limit: 2, sortDirection: -1 })
+                        return bucket
+                            .getCommitsArray({ fromBucketRevision: 6, streamId: STEAM_SAMPLE_ID }, { limit: 2, sortDirection: -1 })
                             .then((docs) => {
                             chai_1.assert.equal(docs.length, 2);
                             chai_1.assert.deepEqual(docs[0], STREAM_SAMPLE_EVENT_6);
@@ -660,7 +697,8 @@ describe("EventStore", function () {
                             projection
                                 .on("data", (doc) => {
                                 totals += doc.Events[0].value;
-                                if (doc._id === 10) { // when last event is read close the projection
+                                if (doc._id === 10) {
+                                    // when last event is read close the projection
                                     projection.close();
                                 }
                             })
@@ -673,7 +711,9 @@ describe("EventStore", function () {
                             });
                         });
                         for (let i = 0; i < 10; i++) {
-                            yield bucket.write(streamId, i, [{ value: i }], { dispatched: true });
+                            yield bucket.write(streamId, i, [{ value: i }], {
+                                dispatched: true,
+                            });
                         }
                         chai_1.assert.equal(yield donePromise, 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9);
                     });
@@ -699,9 +739,9 @@ const SAMPLE_EVENT1 = {
     Events: [
         {
             _t: "MyEventA",
-            Field1: "A"
-        }
-    ]
+            Field1: "A",
+        },
+    ],
 };
 const SAMPLE_EVENT2 = {
     _id: 2,
@@ -711,14 +751,14 @@ const SAMPLE_EVENT2 = {
     Dispatched: true,
     Events: [
         {
-            "_t": "MyEventA",
-            "Field1": "A"
+            _t: "MyEventA",
+            Field1: "A",
         },
         {
-            "_t": "MyEventB",
-            "Field1": "B"
-        }
-    ]
+            _t: "MyEventB",
+            Field1: "B",
+        },
+    ],
 };
 const SAMPLE_EVENT3 = {
     _id: 3,
@@ -728,10 +768,10 @@ const SAMPLE_EVENT3 = {
     Dispatched: true,
     Events: [
         {
-            "_t": "MyEventX",
-            "Field1": "X"
-        }
-    ]
+            _t: "MyEventX",
+            Field1: "X",
+        },
+    ],
 };
 const SAMPLE_EVENT4 = {
     _id: 4,
@@ -741,10 +781,10 @@ const SAMPLE_EVENT4 = {
     Dispatched: true,
     Events: [
         {
-            "_t": "MyEventX",
-            "Field1": "Y"
-        }
-    ]
+            _t: "MyEventX",
+            Field1: "Y",
+        },
+    ],
 };
 const SAMPLE_EVENT4_NOT_DISPATCHED = {
     _id: 4,
@@ -754,10 +794,10 @@ const SAMPLE_EVENT4_NOT_DISPATCHED = {
     Dispatched: false,
     Events: [
         {
-            "_t": "MyEventX",
-            "Field1": "Y"
-        }
-    ]
+            _t: "MyEventX",
+            Field1: "Y",
+        },
+    ],
 };
 const STEAM_SAMPLE_ID = "50000005-5005-5005-5005-500000000005";
 const STREAM_SAMPLE_EVENT_5 = {
@@ -769,9 +809,9 @@ const STREAM_SAMPLE_EVENT_5 = {
     Events: [
         {
             _t: "MyEventA",
-            Field1: "A"
-        }
-    ]
+            Field1: "A",
+        },
+    ],
 };
 const STREAM_SAMPLE_EVENT_6 = {
     _id: 6,
@@ -781,10 +821,10 @@ const STREAM_SAMPLE_EVENT_6 = {
     Dispatched: true,
     Events: [
         {
-            "_t": "MyEventA",
-            "Field1": "A"
-        }
-    ]
+            _t: "MyEventA",
+            Field1: "A",
+        },
+    ],
 };
 const STREAM_SAMPLE_EVENT_7 = {
     _id: 7,
@@ -794,9 +834,9 @@ const STREAM_SAMPLE_EVENT_7 = {
     Dispatched: true,
     Events: [
         {
-            "_t": "MyEventX",
-            "Field1": "X"
-        }
-    ]
+            _t: "MyEventX",
+            Field1: "X",
+        },
+    ],
 };
 //# sourceMappingURL=EventStore.test.js.map

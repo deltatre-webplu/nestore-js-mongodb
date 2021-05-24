@@ -74,14 +74,14 @@ class ProjectionStream extends stream_1.Readable {
         // read last commit to know from where to start next time
         //  (note that I don't use a filter, to ensure that next time I start from next commits, if any)
         //  TODO Think if there is a way to exclude this call for performance reason, at least after first calls...
-        this.bucket.lastCommit({}, this.options)
-            .then((lastCommit) => {
+        this.bucket.lastCommit({}, this.options).then((lastCommit) => {
             let lastBucketRevision = lastCommit ? lastCommit._id : 0;
             const sourceCursor = this.bucket._getCommitsCursor(this.filters, this.options);
             this.source = sourceCursor;
             sourceCursor
                 .on("data", (doc) => {
-                if (doc._id > lastBucketRevision) { // if read doc contains new commits update lastBucketRevision
+                if (doc._id > lastBucketRevision) {
+                    // if read doc contains new commits update lastBucketRevision
                     lastBucketRevision = doc._id;
                 }
                 const commit = mongoHelpers_1.MongoHelpers.mongoDocToCommitData(doc);

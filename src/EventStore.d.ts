@@ -1,4 +1,4 @@
-import { MongoClientOptions, Db as MongoDatabase, Collection as MongoCollection } from "mongodb";
+import { MongoClientOptions, Db, Collection } from "mongodb";
 import { Bucket } from "./Bucket";
 import { AutoIncrementStrategy } from "./autoIncrementStrategies";
 export interface EventStoreOptions {
@@ -6,12 +6,12 @@ export interface EventStoreOptions {
     connectOptions?: MongoClientOptions;
 }
 export declare class EventStore {
-    private options;
-    db: MongoDatabase | undefined;
+    private client;
+    db: Db | undefined;
     autoIncrementStrategy: AutoIncrementStrategy;
     constructor(options: EventStoreOptions);
     connect(): Promise<EventStore>;
     close(): Promise<void>;
     bucket(bucketName: string): Bucket;
-    mongoCollection(bucketName: string): MongoCollection;
+    mongoCollection(bucketName: string): Collection;
 }
