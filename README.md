@@ -56,7 +56,6 @@ Connect to the store only at the start of your application and disconnect at the
 
     doWork();
 
-
 See `./samples` for more usage examples.
 
 ### bucket.write
@@ -69,24 +68,15 @@ Write new events
       events: any[],
       options: WriteOptions = { dispatched: false }): Promise<WriteResult>
 
-
 ### bucket.getCommitById
 
 Get a commit by id.
 
     bucket.getCommitById(id: number): Promise<CommitData | undefined>
 
-### bucket.getCommitsStream
-
-    bucket.getCommitsStream(filters?: CommitsFilters, options?: CommitsOptions): ReadableStream
-
 ### bucket.getCommitsArray
 
     bucket.getCommitsArray(filters?: CommitsFilters, options?: CommitsOptions): Promise<CommitData[]>
-
-### bucket.projectionStream
-
-    bucket.projectionStream(filters?: CommitsFilters, options?: ProjectionStreamOptions): ProjectionStream
 
 ### bucket.lastCommit
 
@@ -100,3 +90,6 @@ Get a commit by id.
 
     bucket.streamRevision(streamId: string): Promise<number>
 
+## 1.x -> 2.x BREAKING CHANGES
+
+From `nestore-js-mongodb` 2.x the feature that allows to keep open the event stream is **DEPRECATED**

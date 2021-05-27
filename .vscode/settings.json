@@ -1,12 +1,11 @@
 {
-    "editor.tabSize": 2,
-    "typescript.tsdk": "./node_modules/typescript/lib",
-    "files.exclude" : {
-        "**/*.js": { "when": "$(basename).ts"},
-        "**/*.d.ts": true,
-        "**/*.js.map": true,
-        "mongo-data": true,
-        "node_modules": true
-    },
-    "tslint.alwaysShowRuleFailuresAsWarnings": true
+  "editor.tabSize": 2,
+  "typescript.tsdk": "./node_modules/typescript/lib",
+  "files.exclude": {
+    "**/*.js": { "when": "$(basename).ts" },
+    "**/*.d.ts": true,
+    "**/*.js.map": true,
+    "mongo-data": true,
+    "node_modules": true
+  }
 }
